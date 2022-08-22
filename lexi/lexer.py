@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from error import *
+import string
 
 # lists all available tokens
 TT_INT = "INT"
@@ -11,9 +12,26 @@ TT_DIV = "DIV"
 TT_LPAREN = "LPAREN"
 TT_RPAREN = "RPAREN"
 TT_SET = "SET"
+TT_IDENTIFIER = "IDENTIFIER"
+TT_KEYWORD = "KEYWORD"
 TT_POW = "POW"
 TT_BLNK = "BLNK"
+TT_EQ = "EQ"
+TT_NE = "NE"
+TT_LT = "LT"
+TT_GT = "GT"
+TT_LTE = "LTE"
+TT_GTE = "GTE"
 TT_EOF = "EOF"
+
+KEYWORDS = [
+    "var",
+    "if",
+    "cre",
+    "and",
+    "or",
+    "not",
+]
 
 
 class Token:  # Data class to represent the token
@@ -28,6 +46,9 @@ class Token:  # Data class to represent the token
 
         if posEnd:
             self.posEnd = posEnd
+
+    def matches(self, type_, value):
+        return self.type == type_ and self.value == value
 
     def __repr__(self):  # returns the token in a formatted way
         if self.value: return f"{self.type}:{self.value}"
@@ -57,6 +78,8 @@ class Position:
 
 
 DIGITS = "0123456789"  # sets the digits constant
+LETTERS = string.ascii_letters
+LETTERS_DIGITS = LETTERS + DIGITS
 
 
 class Lexer:
@@ -78,6 +101,8 @@ class Lexer:
                 self.advance()
             elif self.currentChar in DIGITS:
                 tokens.append(self.makeNum())
+            elif self.currentChar in LETTERS:
+                tokens.append(self.makeIdentifier())
             elif self.currentChar == "+":
                 tokens.append(Token(TT_PLUS, posStart=self.pos))
                 self.advance()
@@ -102,6 +127,17 @@ class Lexer:
             elif self.currentChar == ":":
                 tokens.append(Token(TT_SET, posStart=self.pos))
                 self.advance()
+            elif self.currentChar == "=":
+                tokens.append(Token(TT_EQ, posStart=self.pos))
+                self.advance()
+            elif self.currentChar == "!":
+                tok, error = self.makeNotEquals()
+                if error: return [], error
+                tokens.append(tok)
+            elif self.currentChar == "<":
+                tokens.append(self.makeLessThan())
+            elif self.currentChar == ">":
+                tokens.append(self.makeGreaterThan())
             else:
                 posStart = self.pos.copy()
                 char = self.currentChar
@@ -129,3 +165,47 @@ class Lexer:
             return Token(TT_INT, int(numStr), posStart, self.pos)
         else:
             return Token(TT_FLOAT, float(numStr), posStart, self.pos)
+
+    def makeIdentifier(self):
+        idStr = ""
+        posStart = self.pos.copy()
+
+        while self.currentChar is not None and self.currentChar in LETTERS_DIGITS + "_":
+            idStr += self.currentChar
+            self.advance()
+
+        tokType = TT_KEYWORD if idStr in KEYWORDS else TT_IDENTIFIER
+        return Token(tokType, idStr, posStart, self.pos)
+
+    def makeNotEquals(self):
+        posStart = self.pos.copy()
+        self.advance()
+
+        if self.currentChar == "=":
+            self.advance()
+            return Token(TT_NE, posStart=posStart, posEnd=self.pos), None
+
+        self.advance()
+        return None, ExpectedCharError(posStart, self.pos, "'=' (after '!')")
+
+    def makeLessThan(self):
+        tokType = TT_LT
+        posStart = self.pos.copy()
+        self.advance()
+
+        if self.currentChar == "=":
+            self.advance()
+            tokType = TT_LTE
+
+        return Token(tokType, posStart=posStart, posEnd=self.pos)
+
+    def makeGreaterThan(self):
+        tokType = TT_GT
+        posStart = self.pos.copy()
+        self.advance()
+
+        if self.currentChar == "=":
+            self.advance()
+            tokType = TT_GTE
+
+        return Token(tokType, posStart=posStart, posEnd=self.pos)

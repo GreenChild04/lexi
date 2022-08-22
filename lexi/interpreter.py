@@ -9,13 +9,37 @@ class Interpreter:
         method = getattr(self, methodName, self.noVisitMethod)
         return method(node, context)
 
-    def noVisitMethod(self, node):
+    def noVisitMethod(self, node, context):
         raise Exception(f"No visit_{type(node).__name__} method defined!")
 
     def visit_NumberNode(self, node, context):
         return RTResult().success(
             Number(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
         )
+
+    def visit_VarAccessNode(self, node, context):
+        res = RTResult()
+        varName = node.varNameTok.value
+        value = context.symbolTable.get(varName)
+
+        if not value:
+            return res.failure(RTError(
+                node.posStart, node.posEnd,
+                f"Object '{varName}' is not defined",
+                context
+            ))
+
+        value = value.copy().setPos(node.posStart, node.posEnd)
+        return res.success(value)
+
+    def visit_VarAssignNode(self, node, context):
+        res = RTResult()
+        varName = node.varNameTok.value
+        value = res.register(self.visit(node.valueNode, context))
+        if res.error: return res
+
+        context.symbolTable.set(varName, value)
+        return res.success(value)
 
     def visit_BinOpNode(self, node, context):
         res = RTResult()
@@ -31,6 +55,8 @@ class Interpreter:
             result, error = left.multedBy(right)
         if node.opTok.type == TT_DIV:
             result, error = left.divedBy(right)
+        if node.opTok.type == TT_POW:
+            result, error = left.powedBy(right)
 
         if error:
             return res.failure(error)
@@ -87,6 +113,16 @@ class Number:
             if other.value == 0:
                 return None, RTError(other.posStart, other.posEnd, "Division by zero", self.context)
             return Number(self.value / other.value).setContext(self.context), None
+
+    def copy(self):
+        copy = Number(self.value)
+        copy.setPos(self.posStart, self.posEnd)
+        copy.setContext(self.context)
+        return copy
+
+    def powedBy(self, other):
+        if isinstance(other, Number):
+            return Number(self.value ** other.value).setContext(self.context), None
 
     def __repr__(self):
         return str(self.value)

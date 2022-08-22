@@ -3,6 +3,10 @@ from parser import *
 from interpreter import *
 
 
+global_symbol_table = SymbolTable()
+global_symbol_table.set("null", Number(0))
+
+
 def run(fn, text):
     lexer = Lexer(fn, text)
     tokens, error = lexer.makeTokens()
@@ -14,6 +18,7 @@ def run(fn, text):
 
     interpreter = Interpreter()
     context = Context("<program>")
+    context.symbolTable = global_symbol_table
     result = interpreter.visit(ast.node, context)
 
     return result.value, result.error

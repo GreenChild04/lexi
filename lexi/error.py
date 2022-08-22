@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from strings_with_arrows import *
+from object import *
 
 
 @dataclass()
@@ -24,6 +25,11 @@ class IllegalCharError(Error):
 class InvalidSyntaxError(Error):
     def __init__(self, posStart, posEnd, details):
         super().__init__(posStart, posEnd, "Invalid Syntax", details)
+
+
+class ExpectedCharError(Error):
+    def __init__(self, posStart, posEnd, details):
+        super().__init__(posStart, posEnd, "Expected Character", details)
 
 
 class RTError(Error):
@@ -55,3 +61,6 @@ class Context:
     displayName: str
     parent: vars = None
     parentEntryPos: vars = None
+
+    def __post_init__(self):
+        self.symbolTable = None

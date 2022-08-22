@@ -47,14 +47,10 @@ class ParseResult:
     error: any = None
     node: any = None
 
-    def __post_init__(self):
-        self.advanceCount = 0
-
-    def registerAdvance(self, advance):
-        self.advanceCount += 1
+    def register_advance(self, advance):
+        pass
 
     def register(self, res):
-        self.advanceCount += res.advanceCount
         if res.error: self.error = res.error
         return res.node
 
@@ -63,8 +59,7 @@ class ParseResult:
         return self
 
     def failure(self, error):
-        if not self.error or self.advanceCount == 0:
-            self.error = error
+        self.error = error
         return self
 
 
@@ -95,11 +90,11 @@ class Parser:
         tok = self.currentTok
 
         if tok.type == TT_LPAREN:
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
             expr = res.register(self.expr())
             if res.error: return res
             if self.currentTok.type == TT_RPAREN:
-                res.registerAdvance(self.advance())
+                res.register(self.advance())
                 return res.success(expr)
             else:
                 return res.failure(InvalidSyntaxError(
@@ -108,26 +103,24 @@ class Parser:
                 ))
 
         elif tok.type == TT_IDENTIFIER:
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
             return res.success(VarAccessNode(tok))
 
         elif tok.type in (TT_INT, TT_FLOAT):
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
             return res.success(NumberNode(tok))
 
         elif tok.type in (TT_MINUS, TT_PLUS):
             return self.factor()
 
-        return res.failure(InvalidSyntaxError(
-            tok.posStart, tok.posEnd,
-            "Expected int, float, identifier, string, '+', '-' or '('"))
+        return res.failure(InvalidSyntaxError(tok.posStart, tok.posEnd, "Expected int or float"))
 
     def factor(self):
         res = ParseResult()
         tok = self.currentTok
 
         if tok.type in (TT_PLUS, TT_MINUS):
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
             atom = res.register(self.atom())
             if res.error: return res
             return res.success(UnaryOpNode(tok, atom))
@@ -137,30 +130,11 @@ class Parser:
     def term(self):
         return self.binOp(self.factor, (TT_MUL, TT_DIV))
 
-    def compExpr(self):
-        res = ParseResult()
-
-        if self.currentTok.matches(TT_KEYWORD, "NOT"):
-            opTok = self.currentTok
-            res.registerAdvance(self.advance())
-
-            node = res.register(self.compExpr())
-            if res.error: return res
-            return res.success(UnaryOpNode(opTok, node))
-
-        node = res.register(self.binOp(self.arithExpr, (TT_EQ, TT_NE, TT_LT, TT_GT, TT_LTE, TT_GTE)))
-
-        if res.error:
-            return res.failure(InvalidSyntaxError(
-                self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected int, float, identifier, string, '+', '-' or '('"
-            ))
-
     def expr(self):
         res = ParseResult()
 
         if self.currentTok.matches(TT_KEYWORD, "var"):
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
 
             if self.currentTok.type != TT_IDENTIFIER:
                 return res.failure(InvalidSyntaxError(
@@ -169,7 +143,7 @@ class Parser:
                 ))
 
             varName = self.currentTok
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
 
             if self.currentTok.type != TT_SET:
                 return res.failure(InvalidSyntaxError(
@@ -177,20 +151,12 @@ class Parser:
                     "Expected ':'"
                 ))
 
-            res.registerAdvance(self.advance())
+            res.register(self.advance())
             expr = res.register(self.expr())
             if res.error: return res
             return res.success(VarAssignNode(varName, expr))
-
-        node = res.register(self.binOp(self.compExpr, ((TT_KEYWORD, "and"), (TT_KEYWORD, "or"))))
-
-        if res.error:
-            return res.failure(InvalidSyntaxError(
-                self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected 'var', int, float, identifier, '+', '-', or '('"
-            ))
-
-        return res.success(node)
+        else:
+            return self.binOp(self.term, (TT_PLUS, TT_MINUS))
 
     def pow(self):
         return self.binOp(self.atom, (TT_POW, TT_BLNK), self.factor)
@@ -202,7 +168,7 @@ class Parser:
         left = res.register(func())
         if res.error: return res
 
-        while self.currentTok.type in ops or (self.currentTok.type, self.currentTok.value) in ops:
+        while self.currentTok.type in ops:
             opTok = self.currentTok
             self.advance()
             right = res.register(funcB())

@@ -1,16 +1,25 @@
-expr: term ((PLUS|MINUS) term)*
+expr: {
+	KEYWORD:var IDENTIFIER SET expr
+	comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)
+}
+
+comp-expr: {
+	NOT
+	arith-expr ((EQ|LT|GT|LTE|GTE) arith-expr)*
+}
+
+arith-expr: term ((PLUS|MINUS) term)*
 
 term: factor ((MUL|DIV) factor)*
 
-power: factor (POW factor)*
+power: atom (POW factor)*
 
 atom: {
-	INT|FLOAT
+	INT|FLOAT|IDENTIFIER
 	LPAREN expr RPAREN
 }
 
 factor: {
 	(PLUS|MINUS) atom
-	atom
 	power
 }
