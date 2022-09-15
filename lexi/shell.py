@@ -1,4 +1,5 @@
 import lexi
+from termcolor import colored
 
 while True:
     print()
@@ -7,5 +8,5 @@ while True:
 
     print()
 
-    if error: print(error.asString())
-    else: print(result)
+    if error: print(colored("Error: ", "red") + error.asString());
+    else: print(colored("Success: ", "green") + str(result.value));

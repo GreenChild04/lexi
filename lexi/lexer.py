@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from error import *
 import string
+from debug import Debug
 
 # lists all available tokens
 TT_INT = "INT"
@@ -35,9 +36,10 @@ KEYWORDS = [
 
 
 class Token:  # Data class to represent the token
-    def __init__(self, type, value=None, posStart=None, posEnd=None):
+    def __init__(self, type, value=None, posStart=None, posEnd=None, debug=None):
         self.type = type
         self.value = value
+        self.debug = debug.register(self);
 
         if posStart:
             self.posStart = posStart.copy()
@@ -46,6 +48,8 @@ class Token:  # Data class to represent the token
 
         if posEnd:
             self.posEnd = posEnd
+
+        self.debug.register(f"Token '{self}' found at location [{self.posStart}]");
 
     def matches(self, type_, value):
         return self.type == type_ and self.value == value
@@ -87,6 +91,7 @@ class Lexer:
         self.text = text  # sets the text of the lexer
         self.pos = Position(-1, 0, -1, fn, text)  # sets the current position of the lexer
         self.currentChar = None  # contains the current character
+        self.debug = Debug(self);
         self.advance()  # advances though the string
 
     def advance(self):  # used to advance though user input
@@ -104,31 +109,31 @@ class Lexer:
             elif self.currentChar in LETTERS:
                 tokens.append(self.makeIdentifier())
             elif self.currentChar == "+":
-                tokens.append(Token(TT_PLUS, posStart=self.pos))
+                tokens.append(Token(TT_PLUS, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "-":
-                tokens.append(Token(TT_MINUS, posStart=self.pos))
+                tokens.append(Token(TT_MINUS, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "*":
-                tokens.append(Token(TT_MUL, posStart=self.pos))
+                tokens.append(Token(TT_MUL, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "/":
-                tokens.append(Token(TT_DIV, posStart=self.pos))
+                tokens.append(Token(TT_DIV, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "^":
-                tokens.append(Token(TT_POW, posStart=self.pos))
+                tokens.append(Token(TT_POW, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "(":
-                tokens.append(Token(TT_LPAREN, posStart=self.pos))
+                tokens.append(Token(TT_LPAREN, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == ")":
-                tokens.append(Token(TT_RPAREN, posStart=self.pos))
+                tokens.append(Token(TT_RPAREN, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == ":":
-                tokens.append(Token(TT_SET, posStart=self.pos))
+                tokens.append(Token(TT_SET, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "=":
-                tokens.append(Token(TT_EQ, posStart=self.pos))
+                tokens.append(Token(TT_EQ, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "!":
                 tok, error = self.makeNotEquals()
@@ -144,7 +149,7 @@ class Lexer:
                 self.advance()
                 return [], IllegalCharError(posStart, self.pos, f"'{char}'")  # returns a fucking error
 
-        tokens.append(Token(TT_EOF, posStart=self.pos))
+        tokens.append(Token(TT_EOF, posStart=self.pos, debug=self.debug))
         return tokens, None
 
     def makeNum(self):
@@ -162,9 +167,9 @@ class Lexer:
             self.advance()
 
         if dotCount == 0:
-            return Token(TT_INT, int(numStr), posStart, self.pos)
+            return Token(TT_INT, int(numStr), posStart, self.pos, debug=self.debug)
         else:
-            return Token(TT_FLOAT, float(numStr), posStart, self.pos)
+            return Token(TT_FLOAT, float(numStr), posStart, self.pos, debug=self.debug)
 
     def makeIdentifier(self):
         idStr = ""
@@ -175,7 +180,7 @@ class Lexer:
             self.advance()
 
         tokType = TT_KEYWORD if idStr in KEYWORDS else TT_IDENTIFIER
-        return Token(tokType, idStr, posStart, self.pos)
+        return Token(tokType, idStr, posStart, self.pos, debug=self.debug)
 
     def makeNotEquals(self):
         posStart = self.pos.copy()
@@ -183,7 +188,7 @@ class Lexer:
 
         if self.currentChar == "=":
             self.advance()
-            return Token(TT_NE, posStart=posStart, posEnd=self.pos), None
+            return Token(TT_NE, posStart=posStart, posEnd=self.pos, debug=self.debug), None
 
         self.advance()
         return None, ExpectedCharError(posStart, self.pos, "'=' (after '!')")
@@ -197,7 +202,7 @@ class Lexer:
             self.advance()
             tokType = TT_LTE
 
-        return Token(tokType, posStart=posStart, posEnd=self.pos)
+        return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug)
 
     def makeGreaterThan(self):
         tokType = TT_GT
@@ -208,4 +213,4 @@ class Lexer:
             self.advance()
             tokType = TT_GTE
 
-        return Token(tokType, posStart=posStart, posEnd=self.pos)
+        return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug)
