@@ -10,9 +10,10 @@ class Interpreter:
 
     def visit(self, node, context):
         methodName = f"visit_{type(node).__name__}"
+        method = getattr(self, methodName, self.noVisitMethod);
+        res = method(node, context);
         self.debug.register(f"Visiting [{methodName}] method; Node [{node}]");
-        method = getattr(self, methodName, self.noVisitMethod)
-        return method(node, context)
+        return res;
 
     def noVisitMethod(self, node, context):
         raise Exception(f"No visit_{type(node).__name__} method defined!")
@@ -25,9 +26,9 @@ class Interpreter:
     def visit_VarAccessNode(self, node, context):
         res = RTResult()
         varName = node.varNameTok.value
-        self.debug.register(f"Accessing var '{varName}'");
+        self.debug.register([f"Accessing var '{varName}'"]);
         value = context.symbolTable.get(varName)
-        self.debug.register(f"Found value '{value}' for var '{varName}'")
+        self.debug.register([f"Found value '{value}' for var '{varName}'"])
 
         if not value:
             return res.failure(RTError(
@@ -45,6 +46,8 @@ class Interpreter:
         value = res.register(self.visit(node.valueNode, context))
         if res.error: return res
 
+        self.debug.register([f"Setting varible '{varName}' to '{value}'"]);
+
         context.symbolTable.set(varName, value)
         return res.success(value)
 
@@ -55,7 +58,7 @@ class Interpreter:
         right = res.register(self.visit(node.rightNode, context))
         error, result = None, None
 
-        self.debug.register(f"Running {node.opTok.type} Operation")
+        self.debug.register([f"Running {node.opTok.type} Operation"])
 
         if node.opTok.type == TT_PLUS:
             result, error = left.addedTo(right)
@@ -67,7 +70,7 @@ class Interpreter:
             result, error = left.divedBy(right)
         elif node.opTok.type == TT_POW:
             result, error = left.powedBy(right)
-        elif node.opTok.type == TT_EQ:
+        elif node.opTok.type == TT_EE:
             result, error = left.getComparisonEQ(right)
         elif node.opTok.type == TT_NE:
             result, error = left.getComparisonNE(right)
@@ -102,8 +105,10 @@ class Interpreter:
         error = None
 
         if node.opTok.type == TT_MINUS:
+            self.debug.register(["Found 'Minus' Token"]);
             number, error = number.multedBy(Number(-1))
-        elif node.opTok.matches(TT_KEYWORD, "NOT"):
+        elif node.opTok.matches(TT_KEYWORD, "not"):
+            self.debug.register(["Found 'Not' Keyword"]);
             number, error = number.notted()
 
         if error:

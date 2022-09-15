@@ -1,12 +1,16 @@
 import lexi
 from termcolor import colored
+import sys
 
 while True:
-    print()
-    text = input("<lexi#>")
-    result, error = lexi.run("<stdin>", text)
+    print();
+    try: text = input("<lexi#>");
+    except:
+        print("\n");
+        sys.exit();
+    result, error = lexi.run("<stdin>", text);
 
-    print()
+    print();
 
     if error: print(colored("Error: ", "red") + error.asString());
     else: print(colored("Success: ", "green") + str(result.value));

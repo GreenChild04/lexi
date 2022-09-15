@@ -25,6 +25,9 @@ class Debug:
         if self.debugRun:
             if isinstance(res, str):
                 self.log(res);
+            elif isinstance(res, list):
+                for i in res:
+                    self.pLog(i);
             else:
                 raise Exception(f"Debug Error: Cannot Register [{res}] Object")
 
@@ -33,6 +36,15 @@ class Debug:
             if self.logNum == 0:
                 print("")
             print(colored(f"Debug [{self.name}]: ", "yellow") + msg);
+            self.logNum += 1
+        else:
+            raise Exception(f"Debug Error: {self.name} is not included in 'objects' tuple");
+    
+    def pLog(self, msg):
+        if self.objects.__contains__(self.name):
+            if self.logNum == 0:
+                print("")
+            print(colored(f"Debug [{self.name}]: ", "blue") + msg);
             self.logNum += 1
         else:
             raise Exception(f"Debug Error: {self.name} is not included in 'objects' tuple");

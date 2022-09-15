@@ -4,31 +4,32 @@ import string
 from debug import Debug
 
 # lists all available tokens
-TT_INT = "INT"
-TT_FLOAT = "FLOAT"
-TT_PLUS = "PLUS"
-TT_MINUS = "MINUS"
-TT_MUL = "MUL"
-TT_DIV = "DIV"
-TT_LPAREN = "LPAREN"
-TT_RPAREN = "RPAREN"
-TT_SET = "SET"
-TT_IDENTIFIER = "IDENTIFIER"
-TT_KEYWORD = "KEYWORD"
-TT_POW = "POW"
-TT_BLNK = "BLNK"
-TT_EQ = "EQ"
-TT_NE = "NE"
-TT_LT = "LT"
-TT_GT = "GT"
-TT_LTE = "LTE"
-TT_GTE = "GTE"
-TT_EOF = "EOF"
+TT_INT = "INT";
+TT_FLOAT = "FLOAT";
+TT_PLUS = "PLUS";
+TT_MINUS = "MINUS";
+TT_MUL = "MUL";
+TT_DIV = "DIV";
+TT_LPAREN = "LPAREN";
+TT_RPAREN = "RPAREN";
+TT_SET = "SET";
+TT_IDENTIFIER = "IDENTIFIER";
+TT_KEYWORD = "KEYWORD";
+TT_POW = "POW";
+TT_BLNK = "BLNK";
+TT_EQ = "EQ";
+TT_EE = "EE";
+TT_NE = "NE";
+TT_LT = "LT";
+TT_GT = "GT";
+TT_LTE = "LTE";
+TT_GTE = "GTE";
+TT_EOF = "EOF";
 
 KEYWORDS = [
     "var",
     "if",
-    "cre",
+    "stru",
     "and",
     "or",
     "not",
@@ -133,8 +134,9 @@ class Lexer:
                 tokens.append(Token(TT_SET, posStart=self.pos, debug=self.debug))
                 self.advance()
             elif self.currentChar == "=":
-                tokens.append(Token(TT_EQ, posStart=self.pos, debug=self.debug))
-                self.advance()
+                tok, error = self.makeEquals();
+                if error: return [], error;
+                tokens.append(tok);
             elif self.currentChar == "!":
                 tok, error = self.makeNotEquals()
                 if error: return [], error
@@ -192,6 +194,17 @@ class Lexer:
 
         self.advance()
         return None, ExpectedCharError(posStart, self.pos, "'=' (after '!')")
+
+    def makeEquals(self):
+        tokType = TT_EQ;
+        posStart = self.pos.copy();
+        self.advance();
+
+        if self.currentChar == '=':
+            self.advance();
+            tokType = TT_EE;
+            
+        return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug), None;
 
     def makeLessThan(self):
         tokType = TT_LT
