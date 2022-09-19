@@ -51,6 +51,20 @@ class Interpreter:
         context.symbolTable.set(varName, value)
         return res.success(value)
 
+    def visit_IfNode(self, node, context):
+        res = RTResult();
+
+        for condition, expr in node.cases:
+            conditionValue = res.register(self.visit(condition, context));
+            if res.error: return res;
+
+            if conditionValue.isTrue():
+                exprValue = res.register(self.visit(expr, context));
+                if res.error: return res;
+                return res.success(exprValue);
+
+        return res.success(None);
+
     def visit_BinOpNode(self, node, context):
         res = RTResult()
         left = res.register(self.visit(node.leftNode, context))
@@ -70,6 +84,8 @@ class Interpreter:
             result, error = left.divedBy(right)
         elif node.opTok.type == TT_POW:
             result, error = left.powedBy(right)
+        elif node.opTok.type == TT_TET:
+            result, error = left.tetedBy(right);
         elif node.opTok.type == TT_EE:
             result, error = left.getComparisonEQ(right)
         elif node.opTok.type == TT_NE:
@@ -167,6 +183,18 @@ class Number:
     def powedBy(self, other):
         if isinstance(other, Number):
             return Number(self.value ** other.value).setContext(self.context), None
+    
+    def tetedBy(self, other):
+        if isinstance(other, Number):
+
+            def tet2(x, n):
+                """ Tetration, ^nx, by recursion. """
+                if n == 0:
+                    return 1
+                return x**tet2(x, n-1)
+
+            
+            return Number(tet2(self.value, other.value)).setContext(self.context), None;
 
     def getComparisonEQ(self, other):
         if isinstance(other, Number):
@@ -191,6 +219,9 @@ class Number:
     def getComparisonGTE(self, other):
         if isinstance(other, Number):
             return Number(int(self.value >= other.value)).setContext(self.context), None
+
+    def isTrue(self):
+        return self.value != 0;
 
     def copy(self):
         copy = Number(self.value)

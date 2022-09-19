@@ -43,6 +43,17 @@ class UnaryOpNode:
         return f"({self.opTok}, {self.node})"
 
 
+@dataclass
+class IfNode:
+    cases: vars;
+
+    def __post_init__(self):
+        self.debug = Debug(self);
+        self.debug.register(f"cases: {self.cases}");
+        self.posStart = self.cases[0][0].posStart;
+        self.posEnd = (self.cases[len(self.cases) - 1][0]).posEnd;
+
+
 @dataclass()
 class ParseResult:
     error: any = None
@@ -84,7 +95,7 @@ class Parser:
             for i in msg:
                 self.debug.register([f"{i}; currentTok[{self.currentTok}]"]);
         else:
-            self.debug.register(f"{msg}; currentTok[{self.currentTok}]");
+            self.debug.register(f"{msg}");
 
     def advance(self):
         self.tokIdx += 1;
@@ -98,7 +109,7 @@ class Parser:
         if not res.error and self.currentTok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected '+', '-', '*', '/' or '^'"
+                "Expected '+', '-', '*', '/', '^' or '^^'"
             ))
         return res
 
@@ -119,6 +130,11 @@ class Parser:
                     self.currentTok.posStart, self.currentTok.posEnd,
                     "Expected ')' to end parentheses"
                 ))
+
+        elif tok.matches(TT_KEYWORD, "if"):
+            ifExpr = res.register(self.ifExpr())
+            if res.error: return res
+            return res.success(ifExpr)
 
         elif tok.type == TT_IDENTIFIER:
             res.registerAdvance(self.advance())
@@ -146,7 +162,7 @@ class Parser:
             if res.error: return res
             return res.success(UnaryOpNode(tok, atom))
 
-        return self.pow()
+        return self.tet();
 
     def term(self):
         self.log("Making Term");
@@ -179,7 +195,7 @@ class Parser:
         return res.success(node)
 
     def expr(self):
-        self.log("Making Expr")
+        self.log("Making Expr");
         res = ParseResult()
 
         if self.currentTok.matches(TT_KEYWORD, "var"):
@@ -215,9 +231,89 @@ class Parser:
 
         return res.success(node)
 
+    def ifExpr(self):
+        self.log("Making IfExpr");
+        res = ParseResult();
+        cases = [];
+
+        if not self.currentTok.matches(TT_KEYWORD, "if"):
+            return res.failure(
+                InvalidSyntaxError(self.currentTok.posStart, self.currentTok.posEnd,
+                f"Expected 'if'"
+            ))
+
+        res.registerAdvance(self.advance());
+
+        condition = res.register(self.expr());
+        if res.error: return res;
+
+        if not self.currentTok.type == TT_SET:
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected ':' after if statement"
+            ))
+
+        res.registerAdvance(self.advance());
+
+        expr = res.register(self.expr())
+        if res.error: return res;
+        cases.append((condition, expr))
+
+        while self.currentTok.matches(TT_KEYWORD, "elif"):
+            self.log("Making ElifExpr");
+            res.registerAdvance(self.advance());
+
+            condition = res.register(self.expr());
+            if res.error: return res;
+
+            if not self.currentTok.type == TT_SET:
+                return res.failure(InvalidSyntaxError(
+                    self.currentTok.posStart, self.currentTok.posEnd,
+                    "Expected ':' after elif statement"
+                ))
+
+            res.registerAdvance(self.advance());
+
+            expr = res.register(self.expr());
+            if res.error: return res;
+            cases.append((condition, expr));
+
+        if self.currentTok.matches(TT_KEYWORD, "else"):
+            self.log("Making ElseExpr");
+            res.registerAdvance(self.advance());
+
+            if not self.currentTok.type == TT_SET:
+                return res.failure(InvalidSyntaxError(
+                    self.currentTok.posStart, self.currentTok.posEnd,
+                    "Expected ':' after else statement"
+                ))
+
+            res.registerAdvance(self.advance());
+
+            posStart = self.currentTok.posStart.copy();
+            posEnd = self.currentTok.posEnd.copy();
+
+            expr = res.register(self.expr());
+            if res.error: return res;
+
+            old = self.currentTok;
+
+            self.currentTok = Token(TT_INT, 1, posStart=posStart, posEnd=posEnd, debug=self.debug);
+            atom = res.register(self.atom());
+
+            self.currentTok = old;
+
+            cases.append((atom, expr));
+
+        return res.success(IfNode(cases))
+
     def pow(self):
         self.log("Making Pow");
         return self.binOp(self.atom, (TT_POW, TT_BLNK), self.factor)
+
+    def tet(self):
+        self.log("Making Tetration");
+        return self.binOp(self.pow, (TT_TET, TT_BLNK), self.atom)
 
     def binOp(self, func, ops, funcB=None):
         self.log("Making BinOp");

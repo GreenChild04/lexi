@@ -1,7 +1,12 @@
-var x: 20
+var a: 20
 
-if: (x > 30), {
-	print: "number: " + x
-} elif: (x == 10), {
-	print: "low: " + x
+stru run(x): {
+	if: (x > 30), {
+		print: "number: " + x
+	} elif: (x == 10), {
+		print: "low: " + x
+	}
 }
+
+run: a
+

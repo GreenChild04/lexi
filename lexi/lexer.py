@@ -24,6 +24,7 @@ TT_LT = "LT";
 TT_GT = "GT";
 TT_LTE = "LTE";
 TT_GTE = "GTE";
+TT_TET = "TET";
 TT_EOF = "EOF";
 
 KEYWORDS = [
@@ -33,6 +34,9 @@ KEYWORDS = [
     "and",
     "or",
     "not",
+    "if",
+    "elif",
+    "else",
 ]
 
 
@@ -121,9 +125,6 @@ class Lexer:
             elif self.currentChar == "/":
                 tokens.append(Token(TT_DIV, posStart=self.pos, debug=self.debug))
                 self.advance()
-            elif self.currentChar == "^":
-                tokens.append(Token(TT_POW, posStart=self.pos, debug=self.debug))
-                self.advance()
             elif self.currentChar == "(":
                 tokens.append(Token(TT_LPAREN, posStart=self.pos, debug=self.debug))
                 self.advance()
@@ -133,6 +134,10 @@ class Lexer:
             elif self.currentChar == ":":
                 tokens.append(Token(TT_SET, posStart=self.pos, debug=self.debug))
                 self.advance()
+            elif self.currentChar == "^":
+                tok, error = self.makePower();
+                if error: return [], error;
+                tokens.append(tok);
             elif self.currentChar == "=":
                 tok, error = self.makeEquals();
                 if error: return [], error;
@@ -189,7 +194,7 @@ class Lexer:
         self.advance()
 
         if self.currentChar == "=":
-            self.advance()
+            self.advance();
             return Token(TT_NE, posStart=posStart, posEnd=self.pos, debug=self.debug), None
 
         self.advance()
@@ -204,6 +209,18 @@ class Lexer:
             self.advance();
             tokType = TT_EE;
             
+        return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug), None;
+
+    def makePower(self):
+        tokType = TT_POW;
+        posStart = self.pos.copy();
+        self.advance();
+
+        if self.currentChar == "^":
+            self.advance();
+            tokType = TT_TET;
+            return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug), None;
+        
         return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug), None;
 
     def makeLessThan(self):

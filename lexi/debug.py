@@ -8,7 +8,7 @@ class Debug:
 
     def __post_init__(self):
         self.name = type(self.origin).__name__;
-        self.objects = ("Debug", "Parser", "Lexer", "Token", "Interpreter");
+        self.objects = ("Debug", "Parser", "Lexer", "Token", "Interpreter", "IfNode");
         self.logNum = 0;
         self.debugRun = True;
 
@@ -34,20 +34,20 @@ class Debug:
     def log(self, msg):
         if self.objects.__contains__(self.name):
             if self.logNum == 0:
-                print("")
-            print(colored(f"Debug [{self.name}]: ", "yellow") + msg);
-            self.logNum += 1
+                print("");
+            print(colored(f"Debug [{self.name}]({self.logNum}): ", "yellow") + msg);
+            self.logNum += 1;
         else:
-            raise Exception(f"Debug Error: {self.name} is not included in 'objects' tuple");
+            pass;
     
     def pLog(self, msg):
         if self.objects.__contains__(self.name):
             if self.logNum == 0:
-                print("")
-            print(colored(f"Debug [{self.name}]: ", "blue") + msg);
-            self.logNum += 1
+                print("");
+            print(colored(f"Debug [{self.name}]({self.logNum}): ", "blue") + msg);
+            self.logNum += 1;
         else:
-            raise Exception(f"Debug Error: {self.name} is not included in 'objects' tuple");
+            pass;
 
     def copy(self):
         return Debug(self.origin);
