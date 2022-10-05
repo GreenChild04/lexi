@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from lexer import *
-from object import *
-from debug import Debug
+from lexer import *;
+from error import *;
+from debug import Debug;
 
 
 @dataclass()
@@ -54,6 +54,16 @@ class IfNode:
         self.posEnd = (self.cases[len(self.cases) - 1][0]).posEnd;
 
 
+@dataclass
+class WhileNode:
+    condition: vars;
+    body: vars;
+
+    def __post_init__(self):
+        self.posStart = self.condition.posStart;
+        self.posEnd = self.body.posEnd;
+
+
 @dataclass()
 class ParseResult:
     error: any = None
@@ -63,6 +73,8 @@ class ParseResult:
         self.advanceCount = 0
 
     def registerAdvance(self, advance):
+        if advance:
+            advance();
         self.advanceCount += 1
 
     def register(self, res):
@@ -102,7 +114,6 @@ class Parser:
         if self.tokIdx < len(self.tokens):
             self.currentTok = self.tokens[self.tokIdx];
         self.log(["Advanced Tokens"]);
-        return self.currentTok;
 
     def parse(self):
         res = self.expr()
@@ -136,6 +147,16 @@ class Parser:
             if res.error: return res
             return res.success(ifExpr)
 
+        elif tok.matches(TT_KEYWORD, "while"):
+            whileExpr = res.register(self.whileExpr());
+            if res.error: return res;
+            return res.success(whileExpr);
+
+        elif tok.matches(TT_KEYWORD, "fun"):
+            funcDef = res.register(self.funcDef());
+            if res.error: return res;
+            return res.success(funcDef);
+
         elif tok.type == TT_IDENTIFIER:
             res.registerAdvance(self.advance())
             return res.success(VarAccessNode(tok))
@@ -149,7 +170,7 @@ class Parser:
 
         return res.failure(InvalidSyntaxError(
             tok.posStart, tok.posEnd,
-            "Expected int, float, identifier, string, '+', '-' or '('"))
+            "Expected int, float, identifier, string, var, while, if, fun, '+', '-', or '('"))
 
     def factor(self):
         res = ParseResult()
@@ -189,7 +210,7 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected int, float, identifier, string, '+', '-', 'not' or '('"
+                "Expected int, float, identifier, string, '+', '-', 'not', if, fun or '('"
             ))
 
         return res.success(node)
@@ -226,10 +247,105 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected 'var', int, float, identifier, '+', '-', or '('"
+                "Expected 'var', int, float, identifier, '+', '-', if, fun, or '('"
             ))
 
         return res.success(node)
+
+    def whileExpr(self):
+        self.log("Making WhileExpr");
+        res = ParseResult();
+
+        if not self.currentTok.matches(TT_KEYWORD, "while"):
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected 'while'"
+            ))
+
+        res.registerAdvance(self.advance());
+
+        condition = res.register(self.expr());
+        if res.error: return res;
+
+        if not self.currentTok.type == TT_SET:
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected ':' after while condition"
+            ))
+        
+        res.registerAdvance(self.advance());
+
+        expr = res.register(self.expr());
+        if res.error: return res;
+
+        return res.success(WhileNode(condition, expr));
+
+    def funcDef(self):
+        self.log("Making FuncDef")
+        res = ParseResult()
+
+        if not self.currentTok.matches(TT_KEYWORD, "fun"):
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected 'fun' keyword"
+            ))
+
+        res.registerAdvance(self.advance())
+
+        if self.currentTok.type == TT_IDENTIFIER:
+            varNameTok = self.currentTok;
+            res.registerAdvance(self.advance());
+        else:
+            varNameTok = None;
+
+        argNameToks = [];
+        if self.currentTok.type == TT_LPAREN:
+            res.registerAdvance(self.advance());
+
+            if self.currentTok.type == TT_IDENTIFIER:
+                argNameToks.append(self.currentTok);
+                res.registerAdvance(self.advance());
+
+                while self.currentTok.type == TT_COMMA:
+                    res.registerAdvance(self.advance());
+
+                    if self.currentTok.type != TT_IDENTIFIER:
+                        return res.failure(InvalidSyntaxError(
+                            self.currentTok.posStart, self.currentTok.posEnd,
+                            "Expected identifier after comma"
+                        ));
+                    
+                    argNameToks.append(self.currentTok);
+                    res.registerAdvance(self.advance())
+                
+                if self.currentTok.type != TT_RPAREN:
+                    return res.failure(InvalidSyntaxError(
+                        self.currentTok.posStart, self.currentTok.posEnd,
+                        "Expected ',' or ')'"
+                    ));
+            else:
+                if self.currentTok.type != TT_RPAREN:
+                    return res.failure(InvalidSyntaxError(
+                        self.currentTok.posStart, self.currentTok.posEnd,
+                        "Expected identifer or ')'"
+                    ))
+
+            res.registerAdvance(self.advance());
+
+        if self.currentTok.type != TT_SET:
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected ':'"
+            ));
+
+        res.registerAdvance(self.advance());
+
+        bodyExpr = res.register(self.expr());
+        if res.error: return res;
+
+        return res.success(FuncDefNode(
+            varNameTok, argNameToks, bodyExpr
+        ));
 
     def ifExpr(self):
         self.log("Making IfExpr");
@@ -250,7 +366,7 @@ class Parser:
         if not self.currentTok.type == TT_SET:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected ':' after if statement"
+                "Expected ':' after if condition"
             ))
 
         res.registerAdvance(self.advance());
@@ -309,11 +425,37 @@ class Parser:
 
     def pow(self):
         self.log("Making Pow");
-        return self.binOp(self.atom, (TT_POW, TT_BLNK), self.factor)
+        return self.binOp(self.call, (TT_POW, TT_BLNK), self.factor)
 
     def tet(self):
         self.log("Making Tetration");
         return self.binOp(self.pow, (TT_TET, TT_BLNK), self.atom)
+
+    def call(self):
+        res = ParseResult();
+        atom = res.register(self.atom());
+        if res.error: return res;
+
+        if self.currentTok.type == TT_ARRW:
+            res.registerAdvance(self.advance());
+            argNodes = [];
+
+            argNodes.append(res.register(self.expr()))
+            if res.error: return res;
+
+            while self.currentTok.type == TT_COMMA:
+                res.registerAdvance(self.advance());
+
+                argNodes.append(res.register(self.expr()));
+                if res.error: return res;
+
+            res.registerAdvance(self.advance());
+            return res.success(CallNode(atom, argNodes));
+        elif self.currentTok.type == TT_NSET:
+            res.registerAdvance(self.advance());
+            return res.success(CallNode(atom, []))
+        return res.success(atom);
+
 
     def binOp(self, func, ops, funcB=None):
         self.log("Making BinOp");

@@ -3,7 +3,10 @@ from error import *
 import string
 from debug import Debug
 
-# lists all available tokens
+###########################
+# Tokens
+###########################
+
 TT_INT = "INT";
 TT_FLOAT = "FLOAT";
 TT_PLUS = "PLUS";
@@ -25,6 +28,9 @@ TT_GT = "GT";
 TT_LTE = "LTE";
 TT_GTE = "GTE";
 TT_TET = "TET";
+TT_COMMA = "COMMA";
+TT_ARRW = "ARRW";
+TT_NSET = "NSET";
 TT_EOF = "EOF";
 
 KEYWORDS = [
@@ -37,8 +43,9 @@ KEYWORDS = [
     "if",
     "elif",
     "else",
+    "while",
+    "fun",
 ]
-
 
 class Token:  # Data class to represent the token
     def __init__(self, type, value=None, posStart=None, posEnd=None, debug=None):
@@ -116,9 +123,6 @@ class Lexer:
             elif self.currentChar == "+":
                 tokens.append(Token(TT_PLUS, posStart=self.pos, debug=self.debug))
                 self.advance()
-            elif self.currentChar == "-":
-                tokens.append(Token(TT_MINUS, posStart=self.pos, debug=self.debug))
-                self.advance()
             elif self.currentChar == "*":
                 tokens.append(Token(TT_MUL, posStart=self.pos, debug=self.debug))
                 self.advance()
@@ -133,7 +137,13 @@ class Lexer:
                 self.advance()
             elif self.currentChar == ":":
                 tokens.append(Token(TT_SET, posStart=self.pos, debug=self.debug))
-                self.advance()
+                self.advance();
+            elif self.currentChar == ",":
+                tokens.append(Token(TT_COMMA, posStart=self.pos, debug=self.debug));
+                self.advance();
+            elif self.currentChar == ";":
+                tokens.append(Token(TT_NSET, posStart=self.pos, debug=self.debug));
+                self.advance();
             elif self.currentChar == "^":
                 tok, error = self.makePower();
                 if error: return [], error;
@@ -150,6 +160,10 @@ class Lexer:
                 tokens.append(self.makeLessThan())
             elif self.currentChar == ">":
                 tokens.append(self.makeGreaterThan())
+            elif self.currentChar == "-":
+                tok, error = self.makeDash();
+                if error: return [], error;
+                tokens.append(tok);
             else:
                 posStart = self.pos.copy()
                 char = self.currentChar
@@ -209,6 +223,17 @@ class Lexer:
             self.advance();
             tokType = TT_EE;
             
+        return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug), None;
+
+    def makeDash(self):
+        tokType = TT_MINUS;
+        posStart = self.pos.copy();
+        self.advance();
+
+        if self.currentChar == ">":
+            self.advance();
+            tokType = TT_ARRW;
+        
         return Token(tokType, posStart=posStart, posEnd=self.pos, debug=self.debug), None;
 
     def makePower(self):

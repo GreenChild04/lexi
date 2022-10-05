@@ -29,6 +29,7 @@ class Interpreter:
         self.debug.register([f"Accessing var '{varName}'"]);
         value = context.symbolTable.get(varName)
         self.debug.register([f"Found value '{value}' for var '{varName}'"])
+        self.debug.register([f"Found type '{type(value)} for var '{varName}'"])
 
         if not value:
             return res.failure(RTError(
@@ -64,6 +65,50 @@ class Interpreter:
                 return res.success(exprValue);
 
         return res.success(None);
+
+    def visit_WhileNode(self, node, context):
+        res = RTResult();
+
+        while True:
+            condition = res.register(self.visit(node.condition, context));
+            if res.error: return res;
+            
+            if not condition.isTrue(): break;
+
+            res.register(self.visit(node.body, context));
+            if res.error: return res;
+
+        return res.success(None);
+
+    def visit_FuncDefNode(self, node, context):
+        res = RTResult();
+
+        funcName = node.varNameTok.value if node.varNameTok else None;
+        bodyNode = node.bodyNode;
+        argNames = [argName.value for argName in node.argNameToks];
+        funcValue = Function(funcName, bodyNode, argNames).setContext(context).setPos(node.posStart, node.posEnd);
+
+        if node.varNameTok:
+            context.symbolTable.set(funcName, funcValue);
+
+        return res.success(funcValue);
+
+    def visit_CallNode(self, node, context):
+        res = RTResult();
+        args = [];
+
+        valueToCall = res.register(self.visit(node.nodeToCall, context));
+        if res.error: return res;
+        valueToCall = valueToCall.copy().setPos(node.posStart, node.posEnd);
+
+        for argNode in node.argNodes:
+            args.append(res.register(self.visit(argNode, context)));
+            if res.error: return res;
+
+        returnValue = res.register(valueToCall.execute(args));
+        if res.error: return res;
+
+        return res.success(returnValue);
 
     def visit_BinOpNode(self, node, context):
         res = RTResult()
@@ -134,106 +179,6 @@ class Interpreter:
 
 
 @dataclass()
-class Number:
-    value: float
-
-    def __post_init__(self):
-        self.setPos()
-        self.setContext()
-        self.debug = Debug(self);
-
-    def setPos(self, posStart=None, posEnd=None):
-        self.posStart = posStart
-        self.posEnd = posEnd
-        return self
-
-    def setContext(self, context=None):
-        self.context = context
-        return self
-
-    def addedTo(self, other):
-        if isinstance(other, Number):
-            return Number(self.value + other.value).setContext(self.context), None
-
-    def subbedBy(self, other):
-        if isinstance(other, Number):
-            return Number(self.value - other.value).setContext(self.context), None
-
-    def multedBy(self, other):
-        if isinstance(other, Number):
-            return Number(self.value * other.value).setContext(self.context), None
-
-    def divedBy(self, other):
-        if isinstance(other, Number):
-            if other.value == 0:
-                return None, RTError(other.posStart, other.posEnd, "Division by zero", self.context)
-            return Number(self.value / other.value).setContext(self.context), None
-
-    def notted(self):
-        return Number(1 if self.value == 0 else 0).setContext(self.context), None
-
-    def andedBy(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value and other.value)).setContext(self.context), None
-
-    def oredBy(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value or other.value)).setContext(self.context), None
-
-    def powedBy(self, other):
-        if isinstance(other, Number):
-            return Number(self.value ** other.value).setContext(self.context), None
-    
-    def tetedBy(self, other):
-        if isinstance(other, Number):
-
-            def tet2(x, n):
-                """ Tetration, ^nx, by recursion. """
-                if n == 0:
-                    return 1
-                return x**tet2(x, n-1)
-
-            
-            return Number(tet2(self.value, other.value)).setContext(self.context), None;
-
-    def getComparisonEQ(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value == other.value)).setContext(self.context), None
-
-    def getComparisonNE(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value != other.value)).setContext(self.context), None
-
-    def getComparisonLT(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value < other.value)).setContext(self.context), None
-
-    def getComparisonGT(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value > other.value)).setContext(self.context), None
-
-    def getComparisonLTE(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value <= other.value)).setContext(self.context), None
-
-    def getComparisonGTE(self, other):
-        if isinstance(other, Number):
-            return Number(int(self.value >= other.value)).setContext(self.context), None
-
-    def isTrue(self):
-        return self.value != 0;
-
-    def copy(self):
-        copy = Number(self.value)
-        copy.setPos(self.posStart, self.posEnd)
-        copy.setContext(self.context)
-        return copy
-
-    def __repr__(self):
-        return str(self.value)
-
-
-@dataclass()
 class RTResult:
     value: vars = None
     error: vars = None
@@ -249,3 +194,272 @@ class RTResult:
     def failure(self, error):
         self.error = error
         return self
+
+
+###########################
+# Values
+###########################
+
+class Value:
+    def __init__(self):
+        self.setPos()
+        self.setContext()
+        self.debug = Debug(self);
+
+    def setPos(self, posStart=None, posEnd=None):
+        self.posStart = posStart
+        self.posEnd = posEnd
+        return self
+
+    def setContext(self, context=None):
+        self.context = context
+        return self
+
+    def addedTo(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def subbedBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def multedBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def divedBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def andedBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def oredBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def powedBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+    
+    def tetedBy(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def getComparisonEQ(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def getComparisonNE(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def getComparisonLT(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def getComparisonGT(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def getComparisonLTE(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def getComparisonGTE(self, other):
+        if isinstance(other, Number):
+            return None, self.illegalOperation(other);
+
+    def notted(self):
+        return None, self.illegal_operation();
+
+    def execute(self, args):
+        return RTResult().failure(self.illegalOperation())
+
+    def isTrue(self):
+        return False;
+
+    def copy(self):
+        raise Exception("No copy method defined")
+
+    def illegalOperation(self, other=None):
+        if not other: other = self
+        return RTError(
+            self.posStart, other.posEnd,
+            "Illegal operation",
+            self.context
+        )
+
+    def __repr__(self):
+        return str()
+
+class Null(Value):
+    def copy(self):
+        return Null();
+    
+    def __repr__(self):
+        return "<null>"
+
+class Function(Value):
+    def __init__(self, name, bodyNode, argNames):
+        super().__init__();
+        self.name = name or "<anonymous>";
+        self.bodyNode = bodyNode;
+        self.argNames = argNames;
+
+    def execute(self, args):
+        res = RTResult();
+        interpreter = Interpreter();
+        newContext = Context(self.name, self.context, self.posStart);
+        newContext.symbolTable = SymbolTable(newContext.parent.symbolTable);
+
+        if len(args) > len(self.argNames):
+            return res.failure(RTError(
+                self.posStart, self.posEnd,
+                f"{len(args) - len(self.argNames)} too many args passed into '{self.name}'",
+                self.context
+            ));
+
+        if len(args) < len(self.argNames):
+            return res.failure(RTError(
+                self.posStart, self.posEnd,
+                f"{len(self.argNames) - len(args)} too few args passed into '{self.name}'",
+                self.context
+            ));
+
+        for i in range(len(args)):
+            argName = self.argNames[i];
+            argValue = args[i];
+            argValue.setContext(newContext);
+            newContext.symbolTable.set(argName, argValue)
+
+        value = res.register(interpreter.visit(self.bodyNode, newContext))
+        if res.error: return res;
+        return res.success(value);
+
+    def isTrue(self):
+        return True;
+
+    def copy(self):
+        copy = Function(self.name, self.bodyNode, self.argNames);
+        copy.setContext(self.context);
+        copy.setPos(self.posStart, self.posEnd);
+        return copy;
+
+    def __repr__(self):
+        return f"<function {self.name}>"
+
+class Number(Value):
+    def __init__(self, value):
+        super().__init__();
+        self.value = value;
+
+    def addedTo(self, other):
+        if isinstance(other, Number):
+            return Number(self.value + other.value).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def subbedBy(self, other):
+        if isinstance(other, Number):
+            return Number(self.value - other.value).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def multedBy(self, other):
+        if isinstance(other, Number):
+            return Number(self.value * other.value).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def divedBy(self, other):
+        if isinstance(other, Number):
+            if other.value == 0:
+                return None, RTError(other.posStart, other.posEnd, "Division by zero", self.context)
+            return Number(self.value / other.value).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def notted(self):
+        return Number(1 if self.value == 0 else 0).setContext(self.context), None
+
+    def andedBy(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value and other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def oredBy(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value or other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def powedBy(self, other):
+        if isinstance(other, Number):
+            return Number(self.value ** other.value).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+    
+    def tetedBy(self, other):
+        if isinstance(other, Number):
+
+            def tet2(x, n):
+                """ Tetration, ^nx, by recursion. """
+                if n == 0:
+                    return 1
+                return x**tet2(x, n-1)
+
+            
+            return Number(tet2(self.value, other.value)).setContext(self.context), None;
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonEQ(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value == other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonNE(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value != other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonLT(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value < other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonGT(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value > other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonLTE(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value <= other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonGTE(self, other):
+        if isinstance(other, Number):
+            return Number(int(self.value >= other.value)).setContext(self.context), None
+        else:
+            return None, self.illegalOperation(other);
+
+    def isTrue(self):
+        return True;
+
+    def copy(self):
+        copy = Number(self.value);
+        copy.setPos(self.posStart, self.posEnd);
+        copy.setContext(self.context);
+        return copy;
+
+    def __repr__(self):
+        return str(self.value);

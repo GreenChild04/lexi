@@ -1,6 +1,7 @@
 '''Library Imports'''
 from dataclasses import dataclass
 from termcolor import colored
+from time import time;
 import sys, os
 
 '''Component Imports'''
@@ -11,7 +12,7 @@ from debug import *
 
 
 global_symbol_table = SymbolTable()
-global_symbol_table.set("null", Number(0))
+global_symbol_table.set("null", Null())
 global_symbol_table.set("true", Number(1))
 global_symbol_table.set("false", Number(0))
 
@@ -63,18 +64,19 @@ class CLM:
         return False;
 
     def cmdRead(self, cmd):
-        sp = cmd.split("`");
-        name = list(sp)[0];
-        try:
-            data = sp[1];
-        except: data = None;
-        if self.checkIn(name, self.digits):
-            self.setNum(int(name), data);
-        elif "`" in cmd:
-            methodName = f"cmd_{data}";
-            getattr(self, methodName, self.cmd_no)();
+        if "`" in cmd:
+            sp = cmd.split("`");
+            name = list(sp)[0];
+            try:
+                data = sp[1];
+            except: data = None;
+            if self.checkIn(name, self.digits):
+                self.setNum(int(name), data);
+            elif "`" in cmd:
+                methodName = f"cmd_{data}";
+                getattr(self, methodName, self.cmd_no)();
         else: 
-            self.runFile([name]);
+            self.runFile([cmd]);
 
     def order(self):
         nums = [];
@@ -107,6 +109,7 @@ class CLM:
         except: return lst;
 
     def runFile(self, data):
+        startTime = time();
 
         if len(data) < 1:
             print("Error: Nothing to run");
@@ -121,9 +124,11 @@ class CLM:
 
             if Debug().debugRun:
                 print();
-
-            if error: print(colored("Error: ", "red") + error.asString());
-            elif result: print(colored("Success: ", "green") + str(result.value));
+                if error: print(colored("Error: ", "red") + error.asString());
+                elif result: print(colored(f"Success in [{time() - startTime}]: ", "green") + str(result));
+            else:
+                if error: print(error.asString());
+                elif result: print(str(result));
 
     def cmd_run(self):
         ordered = self.order();
