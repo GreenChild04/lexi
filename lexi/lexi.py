@@ -13,8 +13,8 @@ from debug import *
 
 global_symbol_table = SymbolTable()
 global_symbol_table.set("null", Null())
-global_symbol_table.set("true", Number(1))
-global_symbol_table.set("false", Number(0))
+global_symbol_table.set("true", Boolean(True))
+global_symbol_table.set("false", Boolean(False))
 
 
 def run(fn, text):

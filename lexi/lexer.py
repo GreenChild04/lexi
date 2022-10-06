@@ -17,6 +17,7 @@ TT_LPAREN = "LPAREN";
 TT_RPAREN = "RPAREN";
 TT_SET = "SET";
 TT_IDENTIFIER = "IDENTIFIER";
+TT_STR = "STR"
 TT_KEYWORD = "KEYWORD";
 TT_POW = "POW";
 TT_BLNK = "BLNK";
@@ -120,6 +121,8 @@ class Lexer:
                 tokens.append(self.makeNum())
             elif self.currentChar in LETTERS:
                 tokens.append(self.makeIdentifier())
+            elif self.currentChar == "\"":
+                tokens.append(self.makeStr());
             elif self.currentChar == "+":
                 tokens.append(Token(TT_PLUS, posStart=self.pos, debug=self.debug))
                 self.advance()
@@ -191,6 +194,31 @@ class Lexer:
             return Token(TT_INT, int(numStr), posStart, self.pos, debug=self.debug)
         else:
             return Token(TT_FLOAT, float(numStr), posStart, self.pos, debug=self.debug)
+
+    def makeStr(self):
+        string = "";
+        posStart = self.pos.copy();
+        escapeCharacter = False;
+        self.advance();
+
+        escapeCharacters = {
+            "n": "\n",
+            "t": "\t",
+        }
+
+        while self.currentChar is not None and (self.currentChar != "\"" or escapeCharacter):
+            if escapeCharacter:
+                string += escapeCharacters.get(self.currentChar, self.currentChar);
+                escapeCharacter = False;
+            else:
+                if self.currentChar == "\\":
+                    escapeCharacter = True;
+                else:
+                    string += self.currentChar;
+            self.advance();
+
+        self.advance();
+        return Token(TT_STR, string, posStart, self.pos, debug=self.debug);
 
     def makeIdentifier(self):
         idStr = ""

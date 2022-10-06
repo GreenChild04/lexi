@@ -22,7 +22,7 @@ call: {
 }
 
 atom: {
-	`INT|FLOAT|IDENTIFIER
+	`INT|FLOAT|STRING|IDENTIFIER
 	`LPAREN expr RPAREN
 	`if-expr
 	`while-expr

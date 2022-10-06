@@ -23,8 +23,13 @@ class Interpreter:
             Number(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
         )
 
+    def visit_StringNode(self, node, context):
+        return RTResult().success(
+            String(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
+        )
+
     def visit_VarAccessNode(self, node, context):
-        res = RTResult()
+        res = RTResult();
         varName = node.varNameTok.value
         self.debug.register([f"Accessing var '{varName}'"]);
         value = context.symbolTable.get(varName)
@@ -216,60 +221,46 @@ class Value:
         return self
 
     def addedTo(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def subbedBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def multedBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def divedBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def andedBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def oredBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def powedBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
     
     def tetedBy(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def getComparisonEQ(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def getComparisonNE(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def getComparisonLT(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def getComparisonGT(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def getComparisonLTE(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def getComparisonGTE(self, other):
-        if isinstance(other, Number):
-            return None, self.illegalOperation(other);
+        return None, self.illegalOperation(other);
 
     def notted(self):
         return None, self.illegal_operation();
@@ -296,10 +287,73 @@ class Value:
 
 class Null(Value):
     def copy(self):
-        return Null();
+        copy = Null();
+        copy.setPos(self.posStart, self.posEnd);
+        copy.setContext(self.context);
     
     def __repr__(self):
         return "<null>"
+
+class Boolean(Value):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value;
+
+    def notted(self):
+        return Boolean(True if self.value == False else False).setContext(self.context), None
+
+    def isTrue(self):
+        return self.value;
+
+    def copy(self):
+        copy = Boolean(self.value);
+        copy.setPos(self.posStart, self.posEnd);
+        copy.setContext(self.context);
+        return copy;
+
+    def __repr__(self):
+        return str(self.value).lower();
+
+class String(Value):
+    def __init__(self, value):
+        super().__init__()
+        self.value = value;
+
+    def addedTo(self, other):
+        if isinstance(other, String):
+            return String(self.value + other.value).setContext(self.context), None;
+        else:
+            return None, self.illegalOperation(other);
+    
+    def multedBy(self, other):
+        if isinstance(other, Number):
+            return String(self.value * other.value).setContext(self.context), None;
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonEQ(self, other):
+        if isinstance(other, String):
+            return Boolean(self.value == other.value), None;
+        else:
+            return None, self.illegalOperation(other);
+
+    def getComparisonNE(self, other):
+        if isinstance(other, String):
+            return Boolean(self.value != other.value), None;
+        else:
+            return None, self.illegalOperation(other);
+
+    def copy(self):
+        copy = String(self.value);
+        copy.setPos(self.posStart, self.posEnd);
+        copy.setContext(self.context);
+        return copy;
+
+    def isTrue(self):
+        return len(self.value) > 0;
+
+    def __repr__(self):
+        return self.value;
 
 class Function(Value):
     def __init__(self, name, bodyNode, argNames):
@@ -370,6 +424,8 @@ class Number(Value):
     def multedBy(self, other):
         if isinstance(other, Number):
             return Number(self.value * other.value).setContext(self.context), None
+        elif isinstance(other, Number):
+            return String(self.value * other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 
@@ -380,9 +436,6 @@ class Number(Value):
             return Number(self.value / other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
-
-    def notted(self):
-        return Number(1 if self.value == 0 else 0).setContext(self.context), None
 
     def andedBy(self, other):
         if isinstance(other, Number):
@@ -418,37 +471,37 @@ class Number(Value):
 
     def getComparisonEQ(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value == other.value)).setContext(self.context), None
+            return Boolean(self.value == other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 
     def getComparisonNE(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value != other.value)).setContext(self.context), None
+            return Boolean(self.value != other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 
     def getComparisonLT(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value < other.value)).setContext(self.context), None
+            return Boolean(self.value < other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 
     def getComparisonGT(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value > other.value)).setContext(self.context), None
+            return Boolean(self.value > other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 
     def getComparisonLTE(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value <= other.value)).setContext(self.context), None
+            return Boolean(self.value <= other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 
     def getComparisonGTE(self, other):
         if isinstance(other, Number):
-            return Number(int(self.value >= other.value)).setContext(self.context), None
+            return Boolean(self.value >= other.value).setContext(self.context), None
         else:
             return None, self.illegalOperation(other);
 

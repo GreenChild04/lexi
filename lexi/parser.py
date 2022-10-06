@@ -15,6 +15,27 @@ class NumberNode:
     def __repr__(self):
         return f"{self.tok}"
 
+@dataclass()
+class BooleanNode:
+    tok: vars;
+
+    def __post_init__(self):
+        self.posStart = self.tok.posStart;
+        self.posEnd = self.tok.posEnd;
+
+    def __repr__(self):
+        return f"{self.tok}"
+
+@dataclass()
+class StringNode:
+    tok: vars;
+
+    def __post_init__(self):
+        self.posStart = self.tok.posStart;
+        self.posEnd = self.tok.posEnd;
+
+    def __repr__(self):
+        return f"{self.tok}";
 
 @dataclass()
 class BinOpNode:
@@ -29,7 +50,6 @@ class BinOpNode:
     def __repr__(self):
         return f"({self.leftNode}, {self.opTok}, {self.rightNode})"
 
-
 @dataclass()
 class UnaryOpNode:
     opTok: any
@@ -42,7 +62,6 @@ class UnaryOpNode:
     def __repr__(self):
         return f"({self.opTok}, {self.node})"
 
-
 @dataclass
 class IfNode:
     cases: vars;
@@ -53,7 +72,6 @@ class IfNode:
         self.posStart = self.cases[0][0].posStart;
         self.posEnd = (self.cases[len(self.cases) - 1][0]).posEnd;
 
-
 @dataclass
 class WhileNode:
     condition: vars;
@@ -62,7 +80,6 @@ class WhileNode:
     def __post_init__(self):
         self.posStart = self.condition.posStart;
         self.posEnd = self.body.posEnd;
-
 
 @dataclass()
 class ParseResult:
@@ -160,6 +177,10 @@ class Parser:
         elif tok.type == TT_IDENTIFIER:
             res.registerAdvance(self.advance())
             return res.success(VarAccessNode(tok))
+
+        elif tok.type == TT_STR:
+            res.registerAdvance(self.advance())
+            return res.success(StringNode(tok))
 
         elif tok.type in (TT_INT, TT_FLOAT):
             res.registerAdvance(self.advance())
@@ -414,7 +435,7 @@ class Parser:
 
             old = self.currentTok;
 
-            self.currentTok = Token(TT_INT, 1, posStart=posStart, posEnd=posEnd, debug=self.debug);
+            self.currentTok = Token(TT_IDENTIFIER, "true", posStart=posStart, posEnd=posEnd, debug=self.debug);
             atom = res.register(self.atom());
 
             self.currentTok = old;
