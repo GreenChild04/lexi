@@ -16,17 +16,6 @@ class NumberNode:
         return f"{self.tok}"
 
 @dataclass()
-class BooleanNode:
-    tok: vars;
-
-    def __post_init__(self):
-        self.posStart = self.tok.posStart;
-        self.posEnd = self.tok.posEnd;
-
-    def __repr__(self):
-        return f"{self.tok}"
-
-@dataclass()
 class StringNode:
     tok: vars;
 
@@ -36,6 +25,32 @@ class StringNode:
 
     def __repr__(self):
         return f"{self.tok}";
+
+@dataclass()
+class IterNode:
+    elementNodes: list;
+    posStart: vars;
+    posEnd: vars;
+
+    def inherit(self, other):
+        if isinstance(other, IterNode):
+            self.elementNodes = other.elementNodes;
+            self.posStart = other.posStart;
+            self.posEnd = other.posEnd;
+        else:
+            raise Exception("Cannot inherit from non iternode object");
+
+    def __repr__(self) -> str:
+        return f"{self.elementNodes}";
+
+class ListNode(IterNode):
+    pass
+
+class TupleNode(IterNode):
+    pass
+
+class CurlNode(IterNode):
+    pass
 
 @dataclass()
 class BinOpNode:
@@ -133,7 +148,7 @@ class Parser:
         self.log(["Advanced Tokens"]);
 
     def parse(self):
-        res = self.expr()
+        res = self.iterExpr();
         if not res.error and self.currentTok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
@@ -147,17 +162,19 @@ class Parser:
         self.log("Making Atom");
 
         if tok.type == TT_LPAREN:
-            res.registerAdvance(self.advance())
-            expr = res.register(self.expr())
-            if res.error: return res
-            if self.currentTok.type == TT_RPAREN:
-                res.registerAdvance(self.advance())
-                return res.success(expr)
-            else:
-                return res.failure(InvalidSyntaxError(
-                    self.currentTok.posStart, self.currentTok.posEnd,
-                    "Expected ')' to end parentheses"
-                ))
+            tupleExpr = res.register(self.tupleExpr());
+            if res.error: return res;
+            return res.success(tupleExpr);
+
+        elif tok.type == TT_LSQUARE:
+            listExpr = res.register(self.listExpr());
+            if res.error: return res;
+            return res.success(listExpr);
+
+        elif tok.type == TT_LCURL:
+            curlExpr = res.register(self.curlExpr());
+            if res.error: return res;
+            return res.success(curlExpr);
 
         elif tok.matches(TT_KEYWORD, "if"):
             ifExpr = res.register(self.ifExpr())
@@ -191,7 +208,7 @@ class Parser:
 
         return res.failure(InvalidSyntaxError(
             tok.posStart, tok.posEnd,
-            "Expected int, float, identifier, string, var, while, if, fun, '+', '-', or '('"))
+            "Expected int, float, identifier, string, var, while, if, fun, '[', '+', '-', or '('"))
 
     def factor(self):
         res = ParseResult()
@@ -205,6 +222,151 @@ class Parser:
             return res.success(UnaryOpNode(tok, atom))
 
         return self.tet();
+
+    def listExpr(self):
+        res = ParseResult();
+        elementNodes = [];
+        posStart = self.currentTok.posStart.copy();
+        self.log("Making List")
+
+        if self.currentTok.type != TT_LSQUARE:
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected '['"
+            ));
+
+        res.registerAdvance(self.advance());
+
+        if self.currentTok.type == TT_RSQUARE:
+            res.registerAdvance(self.advance());
+        else:
+            iterExpr = res.register(self.iterExpr(True, TT_RSQUARE));
+            if res.error: return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected ']', 'var', 'if', 'while', 'fun', int, float, identifier, '+', '-', ']', if, fun, or '('"
+            ))
+
+            elementNodes = iterExpr.elementNodes;
+
+            if self.currentTok.type != TT_RSQUARE:
+                return res.failure(InvalidSyntaxError(
+                    self.currentTok.posStart, self.currentTok.posEnd,
+                    "Expected ',' or ']'"
+                ))
+
+            res.registerAdvance(self.advance());
+
+        self.debug.register([f"List Element Nodes: {elementNodes}"]);
+
+        return res.success(ListNode(
+            elementNodes, posStart, self.currentTok.posEnd.copy()
+        ));
+
+    def iterExpr(self, strict=False, bracket=None):
+        res = ParseResult();
+        elementNodes = [];
+        posStart = self.currentTok.posStart.copy();
+        self.log("Making Iteratable")
+
+        elementNodes.append(res.register(self.expr()))
+        if res.error: return res;
+        while self.currentTok.type in (TT_COMMA, TT_SEMI):
+            res.registerAdvance(self.advance());
+
+            if self.currentTok.type not in (TT_EOF, bracket):
+                elementNodes.append(res.register(self.expr()));
+                if res.error: return res;
+
+        self.debug.register([f"Iteratable Element Nodes: {elementNodes}"]);
+
+        if len(elementNodes) == 1 and not strict:
+            return res.success(elementNodes[0]);
+
+        return res.success(IterNode(
+            elementNodes, posStart, self.currentTok.posEnd.copy()
+        ));
+        
+
+    def tupleExpr(self):
+        res = ParseResult();
+        elementNodes = [];
+        posStart = self.currentTok.posStart.copy();
+        self.log("Making Tuple")
+
+        if self.currentTok.type != TT_LPAREN:
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected '('"
+            ));
+
+        res.registerAdvance(self.advance());
+
+        if self.currentTok.type == TT_RPAREN:
+            res.registerAdvance(self.advance());
+        else:
+            iterExpr = res.register(self.iterExpr(True, TT_RPAREN));
+            if res.error: return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected ')', 'var', 'if', 'while', 'fun', int, float, identifier, '+', '-', ']', if, fun, or '('"
+            ))
+
+            elementNodes = iterExpr.elementNodes;
+
+            if self.currentTok.type != TT_RPAREN:
+                return res.failure(InvalidSyntaxError(
+                    self.currentTok.posStart, self.currentTok.posEnd,
+                    "Expected ',' or ')'"
+                ))
+
+            res.registerAdvance(self.advance());
+
+        self.debug.register([f"Tuple Element Nodes: {elementNodes}"]);
+
+        if len(elementNodes) == 1:
+            return res.success(elementNodes[0]);
+
+        return res.success(TupleNode(
+            elementNodes, posStart, self.currentTok.posEnd.copy()
+        ));
+
+    def curlExpr(self):
+        res = ParseResult();
+        elementNodes = [];
+        posStart = self.currentTok.posStart.copy();
+        self.log("Making Curl")
+
+        if self.currentTok.type != TT_LCURL:
+            return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected '{'"
+            ));
+
+        res.registerAdvance(self.advance());
+
+        if self.currentTok.type == TT_RCURL:
+            res.registerAdvance(self.advance());
+        else:
+            iterExpr= res.register(self.iterExpr(True, TT_RCURL));
+            if res.error: return res.failure(InvalidSyntaxError(
+                self.currentTok.posStart, self.currentTok.posEnd,
+                "Expected '}', 'var', 'if', 'while', 'fun', int, float, identifier, '+', '-', ']', if, fun, or '('"
+            ))
+
+            elementNodes = iterExpr.elementNodes;
+
+            if self.currentTok.type != TT_RCURL:
+                return res.failure(InvalidSyntaxError(
+                    self.currentTok.posStart, self.currentTok.posEnd,
+                    "Expected ',' or '}'"
+                ))
+
+            res.registerAdvance(self.advance());
+
+        self.debug.register([f"Curl Element Nodes: {elementNodes}"]);
+
+        return res.success(CurlNode(
+            elementNodes, posStart, self.currentTok.posEnd.copy()
+        ));
 
     def term(self):
         self.log("Making Term");
@@ -231,7 +393,7 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected int, float, identifier, string, '+', '-', 'not', if, fun or '('"
+                "Expected int, float, identifier, string, '+', '-', '[', 'not', if, fun or '('"
             ))
 
         return res.success(node)
@@ -268,7 +430,7 @@ class Parser:
         if res.error:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
-                "Expected 'var', int, float, identifier, '+', '-', if, fun, or '('"
+                "Expected 'var', int, float, identifier, '+', '-', '[', if, fun, or '('"
             ))
 
         return res.success(node)
@@ -361,11 +523,11 @@ class Parser:
 
         res.registerAdvance(self.advance());
 
-        bodyExpr = res.register(self.expr());
+        curlExpr = res.register(self.expr());
         if res.error: return res;
 
         return res.success(FuncDefNode(
-            varNameTok, argNameToks, bodyExpr
+            varNameTok, argNameToks, curlExpr
         ));
 
     def ifExpr(self):
@@ -454,29 +616,58 @@ class Parser:
 
     def call(self):
         res = ParseResult();
-        atom = res.register(self.atom());
+        conv = res.register(self.convExpr());
         if res.error: return res;
 
         if self.currentTok.type == TT_ARRW:
             res.registerAdvance(self.advance());
             argNodes = [];
 
-            argNodes.append(res.register(self.expr()))
-            if res.error: return res;
+            iterExpr = res.register(self.iterExpr(True));
+            if iterExpr is not None:
+                argNodes = iterExpr.elementNodes;
 
-            while self.currentTok.type == TT_COMMA:
-                res.registerAdvance(self.advance());
-
-                argNodes.append(res.register(self.expr()));
-                if res.error: return res;
-
-            res.registerAdvance(self.advance());
-            return res.success(CallNode(atom, argNodes));
+            return res.success(CallNode(conv, argNodes))
         elif self.currentTok.type == TT_NSET:
             res.registerAdvance(self.advance());
-            return res.success(CallNode(atom, []))
-        return res.success(atom);
+            return res.success(CallNode(conv, []))
+        return res.success(conv);
 
+    def convExpr(self):
+        res = ParseResult();
+        atom = res.register(self.atom());
+        if res.error: return res;
+
+        def gen(token, fun):
+            res.registerAdvance(self.advance());
+            argNodes = [];
+            
+            if self.currentTok.type == token:
+                res.registerAdvance(self.advance());
+            else:
+                iterExpr = res.register(self.iterExpr(True));
+                if res.error: return res;
+                argNodes = iterExpr.elementNodes;
+                if self.currentTok.type != token:
+                    return res.failure(InvalidSyntaxError(
+                        self.currentTok.posStart, self.currentTok.posEnd,
+                        f"Expected '{token}'"
+                    ));
+                res.registerAdvance(self.advance());
+
+            return res.success(fun(atom, argNodes));
+
+        if self.currentTok.type == TT_LSQUARE:
+            convList = res.register(gen(TT_RSQUARE, ListConvNode));
+            return res;
+        elif self.currentTok.type == TT_LCURL:
+            convList = res.register(gen(TT_RCURL, CurlConvNode));
+            return res;
+        elif self.currentTok.type == TT_LPAREN:
+            convList = res.register(gen(TT_RPAREN, ParenConvNode));
+            return res;
+
+        return res.success(atom);
 
     def binOp(self, func, ops, funcB=None):
         self.log("Making BinOp");

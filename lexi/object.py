@@ -15,7 +15,7 @@ from debug import *;
 class FuncDefNode:
     varNameTok: vars;
     argNameToks: list;
-    bodyNode: vars;
+    curlNode: vars;
 
     def __post_init__(self):
         if self.varNameTok:
@@ -23,9 +23,9 @@ class FuncDefNode:
         elif len(self.argNameToks) > 0:
             self.posStart = self.argNameToks[0].posStart;
         else:
-            self.posStart = self.bodyNode.posStart;
+            self.posStart = self.curlNode.posStart;
             
-        self.posEnd = self.bodyNode.posEnd;
+        self.posEnd = self.curlNode.posEnd;
 
 @dataclass
 class CallNode:
@@ -35,9 +35,30 @@ class CallNode:
     def __post_init__(self):
         self.posStart = self.nodeToCall.posStart;
         if len(self.argNodes) > 0:
-            self.posEnd = self.argNodes[len(self.argNodes) - 1].posEnd;
+            self.posEnd = self.argNodes[-1].posEnd;
         else:
             self.posEnd = self.nodeToCall.posEnd;
+
+
+'''Converts'''
+
+@dataclass
+class ConvNode:
+    nodeToConv: vars;
+    argNodes: vars;
+    
+    def __post_init__(self):
+        self.posStart = self.nodeToConv.posStart;
+        self.posEnd = self.argNodes[-1].posEnd if len(self.argNodes) > 0 else self.nodeToConv.posEnd;
+
+class ListConvNode(ConvNode):
+    pass;
+
+class CurlConvNode(ConvNode):
+    pass;
+
+class ParenConvNode(ConvNode):
+    pass;
 
 
 '''Variables''';

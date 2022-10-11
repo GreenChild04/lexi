@@ -17,7 +17,11 @@ TT_LPAREN = "LPAREN";
 TT_RPAREN = "RPAREN";
 TT_SET = "SET";
 TT_IDENTIFIER = "IDENTIFIER";
-TT_STR = "STR"
+TT_RSQUARE = "RSQUARE";
+TT_LSQUARE = "LSQUARE";
+TT_RCURL = "RCURL";
+TT_LCURL = "LCURL";
+TT_STR = "STR";
 TT_KEYWORD = "KEYWORD";
 TT_POW = "POW";
 TT_BLNK = "BLNK";
@@ -29,6 +33,7 @@ TT_GT = "GT";
 TT_LTE = "LTE";
 TT_GTE = "GTE";
 TT_TET = "TET";
+TT_SEMI = "SEMI";
 TT_COMMA = "COMMA";
 TT_ARRW = "ARRW";
 TT_NSET = "NSET";
@@ -115,14 +120,12 @@ class Lexer:
         tokens = []  # the creation of the token list
 
         while self.currentChar is not None:  # adds tokens to the token list by checking currentChar
-            if self.currentChar in " \t":
+            if self.currentChar in " \t\n":
                 self.advance()
             elif self.currentChar in DIGITS:
                 tokens.append(self.makeNum())
             elif self.currentChar in LETTERS:
                 tokens.append(self.makeIdentifier())
-            elif self.currentChar == "\"":
-                tokens.append(self.makeStr());
             elif self.currentChar == "+":
                 tokens.append(Token(TT_PLUS, posStart=self.pos, debug=self.debug))
                 self.advance()
@@ -137,15 +140,24 @@ class Lexer:
                 self.advance()
             elif self.currentChar == ")":
                 tokens.append(Token(TT_RPAREN, posStart=self.pos, debug=self.debug))
-                self.advance()
-            elif self.currentChar == ":":
-                tokens.append(Token(TT_SET, posStart=self.pos, debug=self.debug))
                 self.advance();
             elif self.currentChar == ",":
                 tokens.append(Token(TT_COMMA, posStart=self.pos, debug=self.debug));
                 self.advance();
             elif self.currentChar == ";":
-                tokens.append(Token(TT_NSET, posStart=self.pos, debug=self.debug));
+                tokens.append(Token(TT_SEMI, posStart=self.pos, debug=self.debug));
+                self.advance();
+            elif self.currentChar == "[":
+                tokens.append(Token(TT_LSQUARE, posStart=self.pos, debug=self.debug));
+                self.advance();
+            elif self.currentChar == "]":
+                tokens.append(Token(TT_RSQUARE, posStart=self.pos, debug=self.debug));
+                self.advance();
+            elif self.currentChar == "{":
+                tokens.append(Token(TT_LCURL, posStart=self.pos, debug=self.debug));
+                self.advance();
+            elif self.currentChar == "}":
+                tokens.append(Token(TT_RCURL, posStart=self.pos, debug=self.debug));
                 self.advance();
             elif self.currentChar == "^":
                 tok, error = self.makePower();
@@ -155,6 +167,8 @@ class Lexer:
                 tok, error = self.makeEquals();
                 if error: return [], error;
                 tokens.append(tok);
+            elif self.currentChar == ":":
+                tokens.append(self.makeColon());
             elif self.currentChar == "!":
                 tok, error = self.makeNotEquals()
                 if error: return [], error
@@ -165,6 +179,10 @@ class Lexer:
                 tokens.append(self.makeGreaterThan())
             elif self.currentChar == "-":
                 tok, error = self.makeDash();
+                if error: return [], error;
+                tokens.append(tok);
+            elif self.currentChar == "\"":
+                tok, error = self.makeStr();
                 if error: return [], error;
                 tokens.append(tok);
             else:
@@ -217,8 +235,14 @@ class Lexer:
                     string += self.currentChar;
             self.advance();
 
+        if self.currentChar != "\"":
+            return None, InvalidSyntaxError(
+                posStart, self.pos,
+                "String wasn't closed"
+            )
+
         self.advance();
-        return Token(TT_STR, string, posStart, self.pos, debug=self.debug);
+        return Token(TT_STR, string, posStart, self.pos, debug=self.debug), None;
 
     def makeIdentifier(self):
         idStr = ""
@@ -230,6 +254,15 @@ class Lexer:
 
         tokType = TT_KEYWORD if idStr in KEYWORDS else TT_IDENTIFIER
         return Token(tokType, idStr, posStart, self.pos, debug=self.debug)
+
+    def makeColon(self):
+        posStart = self.pos.copy();
+        self.advance();
+
+        if self.currentChar == ";":
+            return Token(TT_NSET, posStart=posStart, posEnd=self.pos, debug=self.debug);
+
+        return Token(TT_SET, posStart=posStart, posEnd=self.pos, debug=self.debug);
 
     def makeNotEquals(self):
         posStart = self.pos.copy()
