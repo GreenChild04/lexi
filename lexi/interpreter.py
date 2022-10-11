@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from lexer import *
 from parser import *
 from debug import Debug
+import os;
 
 
 class Interpreter:
@@ -83,7 +84,7 @@ class Interpreter:
                 context
             ))
 
-        value = value.copy().setPos(node.posStart, node.posEnd)
+        value = value.copy().setPos(node.posStart, node.posEnd).setContext(context);
         return res.success(value)
 
     def visit_VarAssignNode(self, node, context):
@@ -204,6 +205,7 @@ class Interpreter:
 
         returnValue = res.register(valueToCall.execute(context, args=args));
         if res.error: return res;
+        returnValue = returnValue.copy().setPos(node.posStart, node.posEnd).setContext(context);
 
         return res.success(returnValue);
 
@@ -549,6 +551,9 @@ class String(Value):
     def isTrue(self):
         return len(self.value) > 0;
 
+    def __str__(self) -> str:
+        return self.value;
+
     def __repr__(self):
         return f"\"{self.value}\"";
 
@@ -649,7 +654,7 @@ class List(Value):
             return res.success(newTuple[0])
 
     def copy(self):
-        copy = List(self.elements[:]);
+        copy = List(self.elements);
         copy.setContext(self.context);
         copy.setPos(self.posStart, self.posEnd);
         return copy;
@@ -727,7 +732,7 @@ class Tuple(Value):
             return res.success(newTuple[0])
 
     def copy(self):
-        copy = Tuple(self.elements[:]);
+        copy = Tuple(self.elements);
         copy.setContext(self.context);
         self.setPos(self.posStart, self.posEnd);
         return copy;
@@ -861,7 +866,7 @@ class Curl(Value):
         return res.success(expr);
 
     def copy(self):
-        copy = Curl(self.elements[:]);
+        copy = Curl(self.elements);
         copy.setContext(self.context);
         copy.setPos(self.posStart, self.posEnd);
         return copy;
@@ -879,20 +884,20 @@ class BaseFunction(Value):
         newContext.symbolTable = SymbolTable(newContext.parent.symbolTable);
         return newContext;
 
-    def checkArgs(self, argName, args):
+    def checkArgs(self, argNames, args):
         res = RTResult();
 
-        if len(args) > len(self.argNames):
+        if len(args) > len(argNames):
             return res.failure(RTError(
                 self.posStart, self.posEnd,
                 f"{len(args) - len(self.argNames)} too many args passed into '{self.name}'",
                 self.context
             ));
 
-        if len(args) < len(self.argNames):
+        if len(args) < len(argNames):
             return res.failure(RTError(
                 self.posStart, self.posEnd,
-                f"{len(self.argNames) - len(args)} too few args passed into '{self.name}'",
+                f"{len(argNames) - len(args)} too few args passed into '{self.name}'",
                 self.context
             ));
 
@@ -909,8 +914,74 @@ class BaseFunction(Value):
         res = RTResult();
         res.register(self.checkArgs(argNames, args));
         if res.error: return res;
-        res.register(self.populateArgs(argNames, args, context));
+        self.populateArgs(argNames, args, context);
         return res.success(None);
+
+class BuiltInFunction(BaseFunction):
+    def __init__(self, name):
+        super().__init__(name);
+
+    def execute(self, context, args):
+        res = RTResult();
+        newContext = self.generateNewContext();
+
+        methodName = f"execute_{self.name}";
+        method = getattr(self, methodName, self.noVisitMethod);
+
+        res.register(self.checkAndPopulateArgs(method.argNames, args, newContext));
+        if res.error: return res;
+
+        returnValue = res.register(method(newContext));
+        if res.error: return res;
+        return res.success(returnValue);
+
+    def convParen(self, args):
+        res = RTResult();
+        newContext = self.generateNewContext();
+
+        methodName = f"execute_{self.name}";
+        method = getattr(self, methodName, self.noVisitMethod);
+
+        res.register(self.checkAndPopulateArgs(method.argNames, args, newContext));
+        if res.error: return res;
+
+        returnValue = res.register(method(newContext));
+        if res.error: return res;
+        return res.success(returnValue);
+
+    def noVisitMethod(self, context):
+        raise Exception(f"No execute_{self.name} method defined");
+
+    def copy(self):
+        copy = BuiltInFunction(self.name);
+        copy.setContext(self.context);
+        copy.setPos(self.posStart, self.posEnd);
+        return copy;
+
+    def __repr__(self):
+        return f"<built-in function {self.name}>";
+
+    '''Built in functions'''
+
+    def execute_print(self, context):
+        print(str(context.symbolTable.get("value")));
+        return RTResult().success(Null());
+    execute_print.argNames = ["value"];
+
+    def execute_input(self, context):
+        text = input(str(context.symbolTable.get("prompt")));
+        return RTResult().success(String(text));
+    execute_input.argNames = ["prompt"];
+
+    def execute_clear(self, context):
+        os.system("cls" if os.name == "nt" else "clear");
+        return RTResult().success(Null);
+    execute_clear.argNames = [];
+
+    def execute_type(self, context):
+        obj = str(context.symbolTable.get("object"));
+        return RTResult().success(String(type(obj).__name__));
+    execute_type.argNames = ["object"];
 
 class Function(BaseFunction):
     def __init__(self, name, curlNode, argNames):
@@ -955,28 +1026,10 @@ class Function(BaseFunction):
     def convParen(self, args):
         res = RTResult();
         interpreter = Interpreter();
-        newContext = Context(self.name, self.context, self.posStart);
-        newContext.symbolTable = SymbolTable(newContext.parent.symbolTable);
+        newContext = self.generateNewContext();
 
-        if len(args) > len(self.argNames):
-            return res.failure(RTError(
-                self.posStart, self.posEnd,
-                f"{len(args) - len(self.argNames)} too many args passed into '{self.name}'",
-                self.context
-            ));
-
-        if len(args) < len(self.argNames):
-            return res.failure(RTError(
-                self.posStart, self.posEnd,
-                f"{len(self.argNames) - len(args)} too few args passed into '{self.name}'",
-                self.context
-            ));
-
-        for i in range(len(args)):
-            argName = self.argNames[i];
-            argValue = args[i];
-            argValue.setContext(newContext);
-            newContext.symbolTable.set(argName, argValue)
+        res.register(self.checkAndPopulateArgs(self.argNames, args, newContext));
+        if res.error: return res;
 
         if type(self.body) in (Curl,):
             value = res.register(self.body.execute(newContext));

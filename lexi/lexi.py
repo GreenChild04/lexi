@@ -15,6 +15,10 @@ global_symbol_table = SymbolTable()
 global_symbol_table.set("null", Null())
 global_symbol_table.set("true", Boolean(True))
 global_symbol_table.set("false", Boolean(False))
+global_symbol_table.set("print", BuiltInFunction("print"));
+global_symbol_table.set("input", BuiltInFunction("input"));
+global_symbol_table.set("clear", BuiltInFunction("clear"));
+global_symbol_table.set("type", BuiltInFunction("type"));
 
 
 def run(fn, text):
@@ -125,10 +129,10 @@ class CLM:
             if Debug().debugRun:
                 print();
                 if error: print(colored("Error: ", "red") + error.asString());
-                elif result: print(colored(f"Success in [{time() - startTime}]: ", "green") + str(result));
+                elif result: print(colored(f"Success in [{time() - startTime}]: ", "green") + repr(result));
             else:
                 if error: print(error.asString());
-                elif result: print(str(result));
+                elif result: print(repr(result));
 
     def cmd_run(self):
         ordered = self.order();

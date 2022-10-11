@@ -10,7 +10,7 @@ class Debug:
         self.name = type(self.origin).__name__;
         self.objects = ("Debug", "Parser", "Lexer", "Token", "Interpreter", "IfNode");
         self.logNum = 0;
-        self.debugRun = True;
+        self.debugRun = False;
 
     def register(self, res):
         if isinstance(res, Debug):
