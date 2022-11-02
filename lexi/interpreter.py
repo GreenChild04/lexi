@@ -277,20 +277,32 @@ class Interpreter:
             return res.success(number.setPos (node.posStart, node.posEnd))
 
 
-@dataclass()
 class RTResult:
-    value: vars = None
-    error: vars = None
+    def __init__(self) -> None:
+        self.reset();
+
+    def reset(self):
+        self.value = None;
+        self.error = None;
+        self.returnValue = None;
 
     def register(self, res):
         if res.error: self.error = res.error
+        self.returnValue = res.returnValue;
         return res.value
 
     def success(self, value):
+        self.reset();
         self.value = value
         return self
 
+    def successReturn(self, value):
+        self.reset();
+        self.returnValue = value;
+        return self;
+
     def failure(self, error):
+        self.reset();
         self.error = error
         return self
 
@@ -872,7 +884,8 @@ class Curl(Value):
         return copy;
 
     def __repr__(self):
-        return f"{'{'}{', '.join([str(x) for x in self.elements])}{'}'}";
+        # return f"{'{'}{', '.join([str(x) for x in self.elements])}{'}'}";
+        return f"<curl container>"
 
 class BaseFunction(Value):
     def __init__(self, name):
@@ -979,9 +992,57 @@ class BuiltInFunction(BaseFunction):
     execute_clear.argNames = [];
 
     def execute_type(self, context):
-        obj = str(context.symbolTable.get("object"));
+        obj = context.symbolTable.get("object");
         return RTResult().success(String(type(obj).__name__));
     execute_type.argNames = ["object"];
+
+    def execute_len(self, context):
+        iter_ = context.symbolTable.get("iter");
+        
+        if not iter_.findAttribute("itter"):
+            return RTResult().failure(RTError(
+                self.posStart, self.posEnd,
+                "Argument must be a itteratable",
+                context,
+            ));
+
+        return RTResult().success(Number(len(iter_.elements)))
+    execute_len.argNames = ["iter"];
+
+    def execute_run(self, context):
+        fn = context.symbolTable.get("fn");
+
+        if not isinstance(fn, String):
+            return RTResult.failure(RTError(
+                self.posStart, self.posEnd,
+                "Argument must be string",
+                context
+            ));
+
+        fn = fn.value;
+
+        try:
+            with open(fn, "r") as file:
+                script = file.read();
+        except Exception as error:
+            return RTResult().failure(RTError(
+                self.posStart, self.posEnd,
+                f"Failed to load script \"fn\"\n{str(error)}",
+                context,
+            ));
+
+        from lexi import run;
+        _, error = run(fn, script);
+
+        if error:
+            return RTResult().failure(RTError(
+                self.posStart, self.posEnd,
+                f"Failed to finish executing script \"{fn}\"\n{error.asString()}",
+                context,
+            ))
+
+        return RTResult().success(Null());
+    execute_run.argNames = ["fn"];
 
 class Function(BaseFunction):
     def __init__(self, name, curlNode, argNames):
@@ -1005,7 +1066,7 @@ class Function(BaseFunction):
         else:
             value = self.body;
 
-        return res.success(value);
+        return res.success(Null());
 
     def convCurl(self, args):
         res = RTResult();
@@ -1039,7 +1100,7 @@ class Function(BaseFunction):
         else:
             value = self.body;
 
-        return res.success(value);
+        return res.success(Null());
 
     def isTrue(self):
         return True;

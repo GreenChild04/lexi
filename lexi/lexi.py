@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from termcolor import colored
 from time import time;
 import sys, os
+import json;
 
 '''Component Imports'''
 from lexer import *
@@ -19,6 +20,8 @@ global_symbol_table.set("print", BuiltInFunction("print"));
 global_symbol_table.set("input", BuiltInFunction("input"));
 global_symbol_table.set("clear", BuiltInFunction("clear"));
 global_symbol_table.set("type", BuiltInFunction("type"));
+global_symbol_table.set("run", BuiltInFunction("run"));
+global_symbol_table.set("len", BuiltInFunction("len"))
 
 
 def run(fn, text):
@@ -46,6 +49,14 @@ class CLM:
         self.memory = {};
 
     def run(self):
+        if len(sys.argv) > 0:
+            fn = sys.argv[0];
+            try:
+                script = open(fn, "r").read();
+            except:
+                print(f"lexi: can't open file '{fn}': [Errno 2] No such file or directory")
+            run(fn, script);
+
         while True:
             print();
             try: text = input("<lexi#>");
@@ -93,7 +104,7 @@ class CLM:
                 file.append(idx);
             
             for a in self.listRemove(file, nonos):
-                self.memory["_order"] = a if a < self.memory["_order"] else self.memory["_order"];
+                self.memory["_order"] = a if int(a) < int(self.memory["_order"]) else self.memory["_order"];
             nums.append(self.memory["_order"]);
 
             nonos.append(self.memory["_order"]);
@@ -151,8 +162,16 @@ class CLM:
         self.file = {};
         print("Cleared File");
 
+    def cmd_save(self):
+        with open("shell.lxj", "w+") as file:
+            json.dump([self.file, self.memory], file);
+
+    def cmd_load(self):
+        with open("shell.lxj") as file:
+            self.file, self.memory = json.load(file);
+
     def setNum(self, idx, data):
-        self.file[idx] = data;
+        self.file[str(idx)] = data;
 
     def cmd_no(self):
         print("Error: Command not found!");

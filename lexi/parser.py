@@ -96,10 +96,18 @@ class WhileNode:
         self.posStart = self.condition.posStart;
         self.posEnd = self.body.posEnd;
 
+@dataclass
+class ReturnNode:
+    nodeToReturn: vars;
+    posStart: vars;
+    posEnd: vars;
+
+
 @dataclass()
 class ParseResult:
     error: any = None
     node: any = None
+
 
     def __post_init__(self):
         self.advanceCount = 0
@@ -148,7 +156,7 @@ class Parser:
         self.log(["Advanced Tokens"]);
 
     def parse(self):
-        res = self.iterExpr();
+        res = self.iterExpr(additional=TT_SEMI);
         if not res.error and self.currentTok.type != TT_EOF:
             return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
@@ -240,7 +248,7 @@ class Parser:
         if self.currentTok.type == TT_RSQUARE:
             res.registerAdvance(self.advance());
         else:
-            iterExpr = res.register(self.iterExpr(True, TT_RSQUARE));
+            iterExpr = res.register(self.iterExpr(True, TT_RSQUARE, TT_SEMI));
             if res.error: return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
                 "Expected ']', 'var', 'if', 'while', 'fun', int, float, identifier, '+', '-', ']', if, fun, or '('"
@@ -262,7 +270,7 @@ class Parser:
             elementNodes, posStart, self.currentTok.posEnd.copy()
         ));
 
-    def iterExpr(self, strict=False, bracket=None):
+    def iterExpr(self, strict=False, bracket=None, additional=None):
         res = ParseResult();
         elementNodes = [];
         posStart = self.currentTok.posStart.copy();
@@ -270,7 +278,7 @@ class Parser:
 
         elementNodes.append(res.register(self.expr()))
         if res.error: return res;
-        while self.currentTok.type in (TT_COMMA, TT_SEMI):
+        while self.currentTok.type in (TT_COMMA, additional):
             res.registerAdvance(self.advance());
 
             if self.currentTok.type not in (TT_EOF, bracket):
@@ -304,7 +312,7 @@ class Parser:
         if self.currentTok.type == TT_RPAREN:
             res.registerAdvance(self.advance());
         else:
-            iterExpr = res.register(self.iterExpr(True, TT_RPAREN));
+            iterExpr = res.register(self.iterExpr(True, TT_RPAREN, TT_SEMI));
             if res.error: return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
                 "Expected ')', 'var', 'if', 'while', 'fun', int, float, identifier, '+', '-', ']', if, fun, or '('"
@@ -346,7 +354,7 @@ class Parser:
         if self.currentTok.type == TT_RCURL:
             res.registerAdvance(self.advance());
         else:
-            iterExpr= res.register(self.iterExpr(True, TT_RCURL));
+            iterExpr = res.register(self.iterExpr(True, TT_RCURL, TT_SEMI));
             if res.error: return res.failure(InvalidSyntaxError(
                 self.currentTok.posStart, self.currentTok.posEnd,
                 "Expected '}', 'var', 'if', 'while', 'fun', int, float, identifier, '+', '-', ']', if, fun, or '('"

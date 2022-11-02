@@ -51,6 +51,9 @@ KEYWORDS = [
     "else",
     "while",
     "fun",
+    "return",
+    "continue",
+    "break",
 ]
 
 class Token:  # Data class to represent the token
@@ -132,9 +135,6 @@ class Lexer:
             elif self.currentChar == "*":
                 tokens.append(Token(TT_MUL, posStart=self.pos, debug=self.debug))
                 self.advance()
-            elif self.currentChar == "/":
-                tokens.append(Token(TT_DIV, posStart=self.pos, debug=self.debug))
-                self.advance()
             elif self.currentChar == "(":
                 tokens.append(Token(TT_LPAREN, posStart=self.pos, debug=self.debug))
                 self.advance()
@@ -159,6 +159,8 @@ class Lexer:
             elif self.currentChar == "}":
                 tokens.append(Token(TT_RCURL, posStart=self.pos, debug=self.debug));
                 self.advance();
+            elif self.currentChar == "/":
+                self.makeFSlash();
             elif self.currentChar == "^":
                 tok, error = self.makePower();
                 if error: return [], error;
@@ -243,6 +245,22 @@ class Lexer:
 
         self.advance();
         return Token(TT_STR, string, posStart, self.pos, debug=self.debug), None;
+
+    def makeFSlash(self):
+        self.advance();
+
+        if self.currentChar != "/":
+            return Token(TT_DIV, posStart=self.pos, debug=self.debug), None;
+
+        self.skipComment();
+        
+    def skipComment(self):
+        self.advance();
+        
+        while not ["\n", None].__contains__(self.currentChar):
+            self.advance();
+
+        self.advance();
 
     def makeIdentifier(self):
         idStr = ""
