@@ -1,0 +1,15 @@
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/lexi
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/lexi.deps.json
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/lexi.runtimeconfig.json
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/lexi.dll
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/lexi.pdb
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.csproj.AssemblyReference.cache
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.GeneratedMSBuildEditorConfig.editorconfig
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.AssemblyInfoInputs.cache
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.AssemblyInfo.cs
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.csproj.CoreCompileInputs.cache
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.dll
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/refint/lexi.dll
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.pdb
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/lexi.genruntimeconfig.cache
+/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/obj/Debug/net6.0/ref/lexi.dll
