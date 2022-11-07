@@ -15,7 +15,7 @@ namespace lexi
             if (lexed.error is not null) System.Console.WriteLine(lexed.error.repr());
 
             foreach (Token i in (List<Token>) lexed.tok) {
-                System.Console.WriteLine($"Token[{i.repr()}]");
+                System.Console.WriteLine($"Token[ {i.repr()} ]");
             }
         }
     }

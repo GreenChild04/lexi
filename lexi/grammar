@@ -1,0 +1,68 @@
+iterStmt: [/stmt (SEMI /expr)*]
+
+stmt: {
+    [/lateDef]
+    [/iterExpr]
+    [/ifExpr]
+    [/whileExpr]
+}
+
+ifExpr: [
+    KEYWORD:if (IDENTIFIER)? (LPAREN /expr RPAREN) (SET|NSET) /curlExpr
+    (KEYWORD:elif (IDENTIFIER)? (LPAREN /expr RPAREN) (SET|NSET) /curlExpr)?
+    (KEYWORD:else (IDENTIFIER)? (LPAREN /expr RPAREN) (SET|NSET) /curlExpr)?
+]
+
+whileExpr: [KEYWORD:while (IDENTIFIER)? (LPAREN expr RPAREN) (SET|NSET) /curlExpr]
+
+lateDef: [
+    KEYWORD:late IDENTIFIER?
+    (LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN)?
+    (SET|NSET) /curlExpr
+]
+
+iterExpr: [/expr (COMMA /expr)*]
+
+expr: {
+    [/factor]
+    [/boolOp]
+    [/unaryOp]
+    [/binOp]
+    [/conv]
+}
+
+boolOp: {
+    [/expr (EE|NE|GT|LT|GTE|LTE) /expr]
+    [/expr (KEYWORD:AND|KEYWORD:OR) /expr]
+}
+
+unaryOp: [(KEYWORD:not|MINUS|PLUS) atom]
+
+binOp: {
+    [factor ((PLUS|MINUS) factor)*]
+}
+
+factor: {
+    [/atom ((MUL|DIV) /atom)?]
+}
+
+conv: {
+    [/atom /tupleExpr]
+    [/atom /listExpr]
+    [/atom /curlExpr]
+}
+
+atom: {
+    [/atom (POW|TET) /atom]
+    [INT|FLOAT|STRING]
+    [IDENTIFIER (DOT IDENTIFIER)*]
+    [/tupleExpr]
+    [/listExpr]
+    [/curlExpr]
+}
+
+tupleExpr: [LPAREN (iterExpr)? RPAREN]
+
+listExpr: [LSQUARE (iterExpr)? RSQUARE]
+
+curlExpr: [LCURL (iterStmt)? RCURL]

@@ -11,8 +11,11 @@ namespace lexi
         public bool found = false;
         
         public object register(LexResult res) {
-            if (res.error is not null) this.error = res.error;
-            return res.tok;
+            if (res is LexResult) {
+                if (res.error is not null) this.error = res.error;
+                return res.tok;
+            }
+            throw new Exception("Registered non-LexResult object");
         }
 
         public LexResult success(object node) {
