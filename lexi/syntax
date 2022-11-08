@@ -3,3 +3,7 @@
     |   <to run on initialisation>
     |}
 \
+
+-- call/
+    |<struc> <new var name>: <body>;
+\

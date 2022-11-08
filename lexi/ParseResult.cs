@@ -3,7 +3,7 @@ namespace lexi
     public class ParseResult {
         // Object
         public Error error = null;
-        public object node = null;
+        public dynamic node = null;
         public uint advanceCount = 0;
 
         public void registerAdvance(object advance) {

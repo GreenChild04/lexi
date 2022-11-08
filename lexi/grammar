@@ -1,4 +1,4 @@
-iterStmt: [/stmt (SEMI /expr)*]
+iterStmt: [/stmt (SEMI /stmt)*]
 
 stmt: {
     [/lateDef]
@@ -21,6 +21,10 @@ lateDef: [
     (SET|NSET) /curlExpr
 ]
 
+varAccess: [
+    IDENTIFIER (DOT IDENTIFIER)*
+]
+
 iterExpr: [/expr (COMMA /expr)*]
 
 expr: {
@@ -29,6 +33,9 @@ expr: {
     [/unaryOp]
     [/binOp]
     [/conv]
+    [/tupleExpr]
+    [/listExpr]
+    [/curlExpr]
 }
 
 boolOp: {
@@ -56,9 +63,6 @@ atom: {
     [/atom (POW|TET) /atom]
     [INT|FLOAT|STRING]
     [IDENTIFIER (DOT IDENTIFIER)*]
-    [/tupleExpr]
-    [/listExpr]
-    [/curlExpr]
 }
 
 tupleExpr: [LPAREN (iterExpr)? RPAREN]
