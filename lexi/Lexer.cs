@@ -160,7 +160,7 @@ namespace lexi
                 return res.failure(new Error(
                     posStart, this.pos,
                     Error.InvalidSyntaxError,
-                    "String wasn't closed"
+                    ErrorMsg.ISE002
                 ));
             }
 
@@ -230,7 +230,7 @@ namespace lexi
             return res.failure(new Error(
                 posStart, this.pos,
                 Error.ExpectedCharError,
-                "'=' (after '!')"
+                ErrorMsg.ISE003
             ));
         }
 

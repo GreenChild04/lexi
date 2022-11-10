@@ -21,42 +21,39 @@ lateDef: [
 	(SET|NSET) /curlExpr?
 ]
 
-get: [IDENTIFIER (DOT IDENTIFIER)*]
-
 iterExpr: [/expr (COMMA /expr)*]
 
 expr: {
 	[/boolOp ((KEYWORD:and|KEYWORD:or) /boolOp)*]
-	[/unaryOp]
 }
 
 boolOp: {
 	[/binOp ((EE|NE|GT|LT|GTE|LTE) /binOp)*]
+	[KEYWORD:not /boolOp]
 }
-
-unaryOp: [(KEYWORD:not|MINUS|PLUS) atom]
 
 binOp: [factor ((PLUS|MINUS) factor)*]
 
-factor: [/power ((MUL|DIV) /power)?]
+factor: [/power ((MUL|DIV) /power)*]
 
-power: [/atom ((POW|TET) /atom)?]
+power: [/conv ((POW|TET) /atom)*]
 
 conv: {
-	[/atom /tupleExpr]
-	[/atom /listExpr]
-	[/atom /curlExpr]
+	[/atom (/tupleExpr|/listExpr|/curlExpr)*]
 }
 
 atom: {
-	[/atom (POW|TET) /atom]
 	[INT|FLOAT|STRING]
 	[/get]
-	[/conv]
+	[/unaryOp]
 	[/tupleExpr]
 	[/listExpr]
 	[/curlExpr]
 }
+
+get: [IDENTIFIER (DOT IDENTIFIER)*]
+
+unaryOp: [(MINUS|PLUS) atom]
 
 tupleExpr: [LPAREN (iterExpr)? RPAREN]
 

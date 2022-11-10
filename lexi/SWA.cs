@@ -45,7 +45,7 @@ namespace Error
         static int rfind(string str, char c, int start, int end) {
             int found = -1;
 
-            for (int i = start; i <= end; i++) {
+            for (int i = start; i <= end - 1; i++) {
                 if (str[i] == c)
                     if (i > found) found = i;
             }
@@ -54,7 +54,7 @@ namespace Error
         }
 
         static int find(string str, char c, int start) {
-            for (int i = start; i < str.Length; i++) {
+            for (int i = start; i < str.Length - 1; i++) {
                 if (str[i] == c) return i;
             }
             return -1;

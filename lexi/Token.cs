@@ -77,7 +77,7 @@ namespace lexi
         }
 
         public bool matches(string type, object value) {
-            return this.type == type && this.value == value;
+            return this.type == type && this.value.Equals(value);
         }
 
         public string repr() {

@@ -29,4 +29,13 @@ namespace lexi
             return result;
         }
     }
+
+    //Holds all of the Error Codes
+    public class ErrorMsg {
+        // Invalid Syntax Error
+        public static string ISE001 = "Expected '+', '-', '*', '/', '^' or '^^'";
+        public static string ISE002 = "String wasn't closed";
+        public static string ISE003 = "'=' (after '!')";
+        public static string ISE004 = "Expected int, float, identifier, string, '[', '{', '+', '-', or '('";
+    }
 }
