@@ -21,7 +21,7 @@ namespace Error
 
                 // Append to result
                 result += line + "\n";
-                result += mul(" ", colStart) + mul("^", colEnd - colStart - 1);
+                result += mul(" ", colStart) + mul("^", colEnd - colStart);
 
                 // Recalculate indices
                 idxStart = idxEnd;

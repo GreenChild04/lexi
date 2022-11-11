@@ -58,6 +58,9 @@ namespace lexi
             List<Token> tokens = new List<Token>();
 
             while (this.currentChar is not null) {
+                // Error Detection
+                if (this.res.error is not null) return res;
+
                 // Skippable characters
                 if (this.currentChar is null) break;
                 if (" \t\n".Contains(this.currentChar)) this.advance();
@@ -100,7 +103,7 @@ namespace lexi
                     this.advance();
 
                     res.failure(new Error(
-                        posStart, this.pos,
+                        posStart, this.pos.copy(),
                         Error.InvalidCharError,
                         $"'{currentChar}'"
                     ));
@@ -128,15 +131,15 @@ namespace lexi
             }
 
             if (dotCount == 0)
-                return res.success(new Token(Token.INT, int.Parse(numStr), posStart, this.pos));
+                return res.success(new Token(Token.INT, int.Parse(numStr), posStart, this.pos.copy()));
             else
-                return res.success(new Token(Token.FLOAT, float.Parse(numStr), posStart, this.pos));
+                return res.success(new Token(Token.FLOAT, float.Parse(numStr), posStart, this.pos.copy()));
         }
 
         public LexResult makeStr() {
             LexResult res = new LexResult();
-            string str = "";
             Position posStart = this.pos.copy();
+            string str = "";
             bool escapeCharacter = false;
             this.advance();
 
@@ -152,20 +155,19 @@ namespace lexi
                 } else {
                     if (this.currentChar == "\\") escapeCharacter = true;
                     else str += this.currentChar;
-                }
-                this.advance();
+                } this.advance();
             }
 
             if (this.currentChar != "\"") {
                 return res.failure(new Error(
-                    posStart, this.pos,
+                    posStart, this.pos.copy(),
                     Error.InvalidSyntaxError,
                     ErrorMsg.ISE002
                 ));
             }
 
             this.advance();
-            return res.success(new Token(Token.STR, str, posStart, this.pos));
+            return res.success(new Token(Token.STR, str, posStart, this.pos.copy()));
         }
 
         public LexResult makeFSlash() {
@@ -202,7 +204,7 @@ namespace lexi
             }
 
             string tokType = Token.KEYWORDS.Contains(str) ? Token.KEYWORD: Token.IDENTIFIER;
-            return res.success(new Token(tokType, str, posStart, this.pos));
+            return res.success(new Token(tokType, str, posStart, this.pos.copy()));
         }
 
         public LexResult makeColon() {
@@ -228,7 +230,7 @@ namespace lexi
 
             this.advance();
             return res.failure(new Error(
-                posStart, this.pos,
+                posStart, this.pos.copy(),
                 Error.ExpectedCharError,
                 ErrorMsg.ISE003
             ));
