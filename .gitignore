@@ -125,5 +125,12 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# CSha
+lexi/bin/
+lexi/obj/
+lexi/bin/Debug/net6.0/
+
 # Pyre type checker
 .pyre/
+*.dll
+*.pdb

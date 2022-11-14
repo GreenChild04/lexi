@@ -1,6 +1,5 @@
 using System;
 
-
 namespace lexi
 {
     class Lexi {
@@ -36,6 +35,18 @@ namespace lexi
 
             System.Console.WriteLine();
             System.Console.WriteLine(ast.node.repr());
+            System.Console.WriteLine();
+
+            Context context = new Context("<program>");
+            context.symbolTable = new SymbolTable();
+            RTResult result = Interpreter.visit(ast.node, context);
+            if (result.error is not null) {
+                System.Console.WriteLine(result.error.repr());
+                return null;
+            }
+
+            System.Console.WriteLine();
+            System.Console.WriteLine(result.value.value);
             System.Console.WriteLine();
 
             return null;

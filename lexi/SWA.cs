@@ -1,6 +1,6 @@
 using lexi;
 
-namespace Error
+namespace error
 {
     public class SWA {
         public static string gen(string text, Position posStart, Position posEnd) {

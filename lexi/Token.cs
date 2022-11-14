@@ -53,15 +53,16 @@ namespace lexi
             "return",
             "continue",
             "break",
+            "col",
         };
 
         // Object
         public string type;
-        public object value;
+        public dynamic value;
         public Position posStart;
         public Position posEnd;
 
-        public Token(string type, object value=null, Position posStart=null, Position posEnd=null) {
+        public Token(string type, dynamic value=null, Position posStart=null, Position posEnd=null) {
             this.type = type;
             this.value = value;
 

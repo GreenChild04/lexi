@@ -1,4 +1,4 @@
-using Error;
+using error;
 
 namespace lexi
 {
@@ -8,6 +8,7 @@ namespace lexi
         public static string InvalidSyntaxError = "Invalid Syntax";
         public static string ExpectedCharError = "Expected Character";
         public static string RTError = "Runtine Error";
+        public static string IllegalOpError = "Illegal Operation Error";
 
         // Object
         public Position posStart;
@@ -37,5 +38,8 @@ namespace lexi
         public static string ISE002 = "String wasn't closed";
         public static string ISE003 = "'=' (after '!')";
         public static string ISE004 = "Expected int, float, identifier, string, '[', '{', '+', '-', or '('";
+        
+        // Illegal Operation Error
+        public static string IOE001 = "Cannot run this operation between these objects";
     }
 }

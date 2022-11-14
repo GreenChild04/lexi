@@ -4,31 +4,6 @@ using System.Collections;
 
 namespace lexi
 {
-    // Lexer Result Storage
-    public class LexResult {
-        public Error error = null;
-        public object tok = null;
-        public bool found = false;
-        
-        public object register(LexResult res) {
-            if (res is LexResult) {
-                if (res.error is not null) this.error = res.error;
-                return res.tok;
-            }
-            throw new Exception("Registered non-LexResult object");
-        }
-
-        public LexResult success(object node) {
-            this.tok = node;
-            return this;
-        }
-
-        public LexResult failure(Error error) {
-            if (this.error is null) this.error = error;
-            return this;
-        }
-    }
-
     // Lexer Class
     public class Lexer {
         // Class
@@ -63,7 +38,10 @@ namespace lexi
 
                 // Skippable characters
                 if (this.currentChar is null) break;
-                if (" \t\n".Contains(this.currentChar)) this.advance();
+                if (" \t\n".Contains(this.currentChar)) {
+                    res.found = true;
+                    this.advance();
+                }
 
                 // Single Character Tokens
                 if (this.currentChar is null) break;
@@ -131,9 +109,13 @@ namespace lexi
             }
 
             if (dotCount == 0)
-                return res.success(new Token(Token.INT, int.Parse(numStr), posStart, this.pos.copy()));
+                try {
+                    return res.success(new Token(Token.INT, int.Parse(numStr), posStart, this.pos.copy()));
+                } catch {return res.success(new Token(Token.INT, long.Parse(numStr), posStart, this.pos.copy()));}
             else
-                return res.success(new Token(Token.FLOAT, float.Parse(numStr), posStart, this.pos.copy()));
+                try {
+                    return res.success(new Token(Token.FLOAT, float.Parse(numStr), posStart, this.pos.copy()));
+                } catch {return res.success(new Token(Token.FLOAT, double.Parse(numStr), posStart, this.pos.copy()));}
         }
 
         public LexResult makeStr() {
@@ -175,7 +157,7 @@ namespace lexi
             this.advance();
 
             if (this.currentChar != "/")
-                return res.success(new Token(Token.DIV, posStart: this.pos));
+                return res.success(new Token(Token.DIV, posStart: this.pos.copy()));
 
             res.register(this.skipComment());
             return res;
@@ -213,9 +195,9 @@ namespace lexi
             this.advance();
 
             if (this.currentChar == ";")
-                return res.success(new Token(Token.NSET, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.NSET, posStart: posStart, posEnd: this.pos.copy()));
 
-            return res.success(new Token(Token.SET, posStart: posStart, posEnd: this.pos));
+            return res.success(new Token(Token.SET, posStart: posStart, posEnd: this.pos.copy()));
         }
 
         public LexResult makeNotEquals() {
@@ -225,7 +207,7 @@ namespace lexi
 
             if (this.currentChar == "=") {
                 this.advance();
-                return res.success(new Token(Token.NE, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.NE, posStart: posStart, posEnd: this.pos.copy()));
             }
 
             this.advance();
@@ -243,10 +225,10 @@ namespace lexi
 
             if (this.currentChar == "=") {
                 this.advance();
-                return res.success(new Token(Token.EE, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.EE, posStart: posStart, posEnd: this.pos.copy()));
             }
 
-            return res.success(new Token(Token.EQ, posStart: posStart, posEnd: this.pos));
+            return res.success(new Token(Token.EQ, posStart: posStart, posEnd: this.pos.copy()));
         }
 
         public LexResult makeDash() {
@@ -256,10 +238,10 @@ namespace lexi
 
             if (this.currentChar == ">") {
                 this.advance();
-                return res.success(new Token(Token.ARRW, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.ARRW, posStart: posStart, posEnd: this.pos.copy()));
             }
 
-            return res.success(new Token(Token.MINUS, posStart: posStart, posEnd: this.pos));
+            return res.success(new Token(Token.MINUS, posStart: posStart, posEnd: this.pos.copy()));
         }
 
         public LexResult makePower() {
@@ -269,10 +251,10 @@ namespace lexi
 
             if (this.currentChar == "^") {
                 this.advance();
-                return res.success(new Token(Token.TET, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.TET, posStart: posStart, posEnd: this.pos.copy()));
             }
 
-            return res.success(new Token(Token.POW, posStart: posStart, posEnd: this.pos));
+            return res.success(new Token(Token.POW, posStart: posStart, posEnd: this.pos.copy()));
         }
 
         public LexResult makeLesserThan() {
@@ -282,10 +264,10 @@ namespace lexi
 
             if (this.currentChar == "=") {
                 this.advance();
-                return res.success(new Token(Token.LTE, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.LTE, posStart: posStart, posEnd: this.pos.copy()));
             }
 
-            return res.success(new Token(Token.LT, posStart: posStart, posEnd: this.pos));
+            return res.success(new Token(Token.LT, posStart: posStart, posEnd: this.pos.copy()));
         }
 
         public LexResult makeGreaterThan() {
@@ -295,10 +277,10 @@ namespace lexi
 
             if (this.currentChar == "=") {
                 this.advance();
-                return res.success(new Token(Token.GTE, posStart: posStart, posEnd: this.pos));
+                return res.success(new Token(Token.GTE, posStart: posStart, posEnd: this.pos.copy()));
             }
 
-            return res.success(new Token(Token.GT, posStart: posStart, posEnd: this.pos));
+            return res.success(new Token(Token.GT, posStart: posStart, posEnd: this.pos.copy()));
         }
     }
 }

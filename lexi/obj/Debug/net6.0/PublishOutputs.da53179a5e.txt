@@ -1,5 +1,0 @@
-/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/publish/lexi
-/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/publish/lexi.dll
-/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/publish/lexi.deps.json
-/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/publish/lexi.runtimeconfig.json
-/media/greenchild/Gata/Ethan/Home/Github/lexi/lexi/bin/Debug/net6.0/publish/lexi.pdb
