@@ -1,11 +1,12 @@
 using System;
+using comterpreter;
 
 namespace lexi
 {
     class Lexi {
         public static void Main(string[] args) {
             while (true) {
-                System.Console.Write("<lexi>");
+                System.Console.Write("<lexi#>");
                 string input = System.Console.ReadLine();
                 System.Console.WriteLine();
                 run("<stdin>", input);
@@ -37,17 +38,19 @@ namespace lexi
             System.Console.WriteLine(ast.node.repr());
             System.Console.WriteLine();
 
-            Context context = new Context("<program>");
-            context.symbolTable = new SymbolTable();
-            RTResult result = Interpreter.visit(ast.node, context);
-            if (result.error is not null) {
-                System.Console.WriteLine(result.error.repr());
-                return null;
-            }
+            // Context context = new Context("<program>");
+            // context.symbolTable = new SymbolTable();
+            // RTResult result = Interpreter.visit(ast.node, context);
+            // if (result.error is not null) {
+            //     System.Console.WriteLine(result.error.repr());
+            //     return null;
+            // }
 
-            System.Console.WriteLine();
-            System.Console.WriteLine(result.value.value);
-            System.Console.WriteLine();
+            // dynamic result = Compiler.visit(ast.node);
+
+            // System.Console.WriteLine();
+            // System.Console.WriteLine(result.value.repr());
+            // System.Console.WriteLine();
 
             return null;
         }

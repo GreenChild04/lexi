@@ -5,27 +5,51 @@ stmt: {
 	[/iterExpr]
 	[/ifExpr]
 	[/whileExpr]
+	[/colExpr]
+	[/varDef]
+	[KEYWORD:const /lateDef]
 }
 
-ifExpr: [
-    KEYWORD:if (IDENTIFIER)? (LPAREN /boolOp RPAREN) (SET|NSET) /curlExpr
-    (KEYWORD:elif (IDENTIFIER)? (LPAREN /boolOp RPAREN) (SET|NSET) /curlExpr)?
-    (KEYWORD:else (IDENTIFIER)? (LPAREN /boolOp RPAREN) (SET|NSET) /curlExpr)?
+reservedKey: {
+	[KEYWORD:return /iterExpr]
+	[KEYWORD:use IDENTIFIER]
+}
+
+varDef: [(KEYWORD:var|KEYWORD:const) IDENTIFIER (SET|EQ) /iterExpr]
+
+colExpr: [
+	KEYWORD:col IDENTIFIER? (SET /curlExpr | NSET)
 ]
 
-whileExpr: [KEYWORD:while (IDENTIFIER)? (LPAREN /expr RPAREN) (SET|NSET) /curlExpr]
+ifExpr: [
+    KEYWORD:if (IDENTIFIER)? /compExpr (SET|NSET) /curlExpr
+    (KEYWORD:else (IDENTIFIER)? /compExpr (SET|NSET) /curlExpr)*
+]
+
+whileExpr: [KEYWORD:while (IDENTIFIER)? /compExpr (SET|NSET) /curlExpr]
 
 lateDef: [
 	KEYWORD:late IDENTIFIER?
 	(LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN)?
-	(SET|NSET) /curlExpr?
+	(SET /curlExpr | NSET)
 ]
 
 iterExpr: [/expr (COMMA /expr)*]
 
 expr: {
-	[/boolOp ((KEYWORD:and|KEYWORD:or) /boolOp)*]
+	[/call]
+	[KEYWORD:encap /stmt]
 }
+
+call: {
+	[/compExpr (IDENTIFIER? NSET)?]
+	[/compExpr (IDENTIFIER? SET /iterExpr)?]
+	[/varMod]
+}
+
+varMod: [/compExpr EQ /compExpr]
+
+compExpr: [/boolOp ((KEYWORD:and|KEYWORD:or) /boolOp)*]
 
 boolOp: {
 	[/binOp ((EE|NE|GT|LT|GTE|LTE) /binOp)*]
@@ -36,22 +60,20 @@ binOp: [factor ((PLUS|MINUS) factor)*]
 
 factor: [/power ((MUL|DIV) /power)*]
 
-power: [/conv ((POW|TET) /atom)*]
+power: [/get ((POW|TET) /get)*]
 
-conv: {
-	[/atom (/tupleExpr|/listExpr|/curlExpr)*]
-}
+get: [/conv (DOT conv)*]
+
+conv: [/atom (/tupleExpr|/listExpr|/curlExpr)*]
 
 atom: {
 	[INT|FLOAT|STRING]
-	[/get]
+	[IDENTIFIER]
 	[/unaryOp]
 	[/tupleExpr]
 	[/listExpr]
 	[/curlExpr]
 }
-
-get: [IDENTIFIER (DOT IDENTIFIER)*]
 
 unaryOp: [(MINUS|PLUS) atom]
 

@@ -40,20 +40,21 @@ namespace lexi
         public static string EOF = "EOF";
 
         public static string[] KEYWORDS = {
-            "var",
             "if",
-            "stru",
             "and",
             "or",
             "not",
-            "elif",
             "else",
             "while",
-            "fun",
             "return",
             "continue",
+            "const",
             "break",
             "col",
+            "late",
+            "live",
+            "use",
+            "encap",
         };
 
         // Object

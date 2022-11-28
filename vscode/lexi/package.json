@@ -1,0 +1,20 @@
+{
+	"name": "lexi",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": ">=0.9.0-pre.1"
+	},
+	"publisher": "greenchild",
+	"contributes": {
+		"languages": [{
+			"id": "lexi",
+			"aliases": ["Lexi", "lexi"],
+			"extensions": [".lx"]
+		}],
+		"grammars": [{
+			"language": "lexi",
+			"scopeName": "source.lexi",
+			"path": "./syntaxes/lexi.tmLanguage"
+		}]
+	}
+}

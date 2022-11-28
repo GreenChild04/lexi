@@ -1,5 +1,4 @@
 using System.Reflection;
-using late;
 
 namespace lexi
 {
@@ -24,13 +23,13 @@ namespace lexi
 
         public static RTResult visit_NumberNode(NumberNode node, Context context) {
             return new RTResult().success(
-                new Number(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
+                new late.primative._number.Number(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
             );
         }
 
         public static RTResult visit_StringNode(StringNode node, Context context) {
             return new RTResult().success(
-                new late.String(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
+                new late.primative._string.String(node.tok.value).setContext(context).setPos(node.posStart, node.posEnd)
             );
         }
 
@@ -62,13 +61,25 @@ namespace lexi
             if (res.error is not null) return res;
 
             if (node.opTok.type == Token.MINUS) {
-                right = res.register(right.BinOp_multedBy(new Number(-1)));
+                right = res.register(right.BinOp_multedBy(new late.primative._number.Number(-1)));
             } else if (node.opTok.matches(Token.KEYWORD, "not")) {
                 right = res.register(right.UnaryOp_notted());
             }
 
             if (res.error is not null) return res;
             return res.success(right.setPos(node.posStart, node.posEnd).setContext(context));
+        }
+
+        public static RTResult visit_TupleNode(TupleNode node, Context context) {
+            RTResult res = new RTResult();
+            List<dynamic> elements = new List<dynamic>();
+
+            for (int i = 0; i < node.elementNodes.Count; i++) {
+                elements.Add(res.register(Interpreter.visit(node.elementNodes[i], context)));
+                if (res.error is not null) return res;
+            }
+
+            return res.success(new late.primative._iteration.Tuple(elements).setContext(context).setPos(node.posStart, node.posEnd));
         }
     }
 }
