@@ -32,7 +32,7 @@ namespace late {
             }
 
         public new string repr() {
-            return $"\n{this.value}\n";
+            return $"\"{this.value}\"";
         }
     }
 }}}

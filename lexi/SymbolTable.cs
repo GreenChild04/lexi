@@ -36,10 +36,12 @@ namespace lexi
     public class Symbol {
         public dynamic value;
         public bool constant;
+        public bool late;
 
-        public Symbol(dynamic value, bool constant=false) {
+        public Symbol(dynamic value, bool constant=false, bool late=false) {
             this.value = value;
             this.constant = constant;
+            this.late = late;
         }
     }
 }

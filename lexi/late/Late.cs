@@ -75,5 +75,10 @@ namespace late
             public RTResult BinOp_oredBy(dynamic other) {return new RTResult().failure(this.illegalOperation(other));}
             public RTResult BinOp_powedBy(dynamic other) {return new RTResult().failure(this.illegalOperation(other));}
             public RTResult BinOp_tetedBy(dynamic other) {return new RTResult().failure(this.illegalOperation(other));}
+
+	// ConvOp:
+	    public RTResult Conv_list(dynamic other) {return new RTResult().failure(this.illegalOperation(other));}
+	    public RTResult Conv_tuple(dynamic other) {return new RTResult().failure(this.illegalOperation(other));}
+            public RTResult Conv_curl(dynamic other) {return new RTResult().failure(this.illegalOperation(other));}
     }
 }

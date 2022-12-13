@@ -115,5 +115,36 @@ namespace lexi
                 lexer.advance();
             }
         }
+
+        /////////////////////
+        // SeraLib Stuff
+        /////////////////////
+
+        public static uint address = 1001;
+
+        public Token(SeraLib.SeraData data) {
+            this.type = data.data[0];
+            this.posStart = data.data[2];
+            this.posEnd = data.data[3];
+
+            string raw = data.data[1];
+            this.value = this.type switch {
+                "STR" => raw,
+                "KEYWORD" => raw,
+                "IDENTIFIER" => raw,
+                "INT" => int.Parse(raw),
+                "FLOAT" => double.Parse(raw),
+                _ => null,
+            };
+        }
+
+        public SeraLib.SeraBall seralib() {
+            return new SeraLib.SeraBall(Token.address) {
+                this.type,
+                this.value is null ? "<null>": this.value.ToString(),
+                this.posStart,
+                this.posEnd,
+            };
+        }
     }
 }

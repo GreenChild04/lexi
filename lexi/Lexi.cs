@@ -5,20 +5,24 @@ namespace lexi
 {
     class Lexi {
         public static void Main(string[] args) {
-            while (true) {
-                System.Console.Write("<lexi#>");
-                string input = System.Console.ReadLine();
-                System.Console.WriteLine();
-                run("<stdin>", input);
+            try {
+                compile(args[0], File.ReadAllText(args[0]));
+            } catch (Exception) {
+                while (true) {
+                    System.Console.Write("<lexi#>");
+                    string input = System.Console.ReadLine();
+                    System.Console.WriteLine();
+                    run("<stdin>", input);
+                }
             }
         }
 
-        public static object run(string fn, string text) {
+        public static int run(string fn, string text) {
             Lexer lexer = new Lexer(fn, text);
             LexResult lexed = lexer.makeTokens();
             if (lexed.error is not null) {
                 System.Console.WriteLine(lexed.error.repr()); 
-                return null;
+                return 1;
             }
 
             foreach (Token i in (List<Token>) lexed.tok) {
@@ -31,28 +35,46 @@ namespace lexi
             ParseResult ast = parser.parse();
             if (ast.error is not null) {
                 System.Console.WriteLine(ast.error.repr());
-                return null;
+                return 1;
             }
-
+            
             System.Console.WriteLine();
             System.Console.WriteLine(ast.node.repr());
             System.Console.WriteLine();
 
-            // Context context = new Context("<program>");
-            // context.symbolTable = new SymbolTable();
-            // RTResult result = Interpreter.visit(ast.node, context);
-            // if (result.error is not null) {
-            //     System.Console.WriteLine(result.error.repr());
-            //     return null;
-            // }
+            Context context = new Context("<program>");
+            context.symbolTable = new SymbolTable();
+            RTResult result = Interpreter.visit(ast.node, context);
+            if (result.error is not null) {
+                System.Console.WriteLine(result.error.repr());
+                return 1;
+            }
 
             // dynamic result = Compiler.visit(ast.node);
 
-            // System.Console.WriteLine();
-            // System.Console.WriteLine(result.value.repr());
-            // System.Console.WriteLine();
+            System.Console.WriteLine();
+            System.Console.WriteLine(result.value.repr());
+            System.Console.WriteLine();
 
-            return null;
+            return 0;
+        }
+
+        public static int compile(string fn, string text) {
+            Lexer lexer = new Lexer(fn, text);
+            LexResult lexed = lexer.makeTokens();
+            if (lexed.error is not null) {
+                System.Console.WriteLine(lexed.error.repr()); 
+                return 1;
+            }
+
+            Parser parser = new Parser((List<Token>) lexed.tok);
+            ParseResult ast = parser.parse();
+            if (ast.error is not null) {
+                System.Console.WriteLine(ast.error.repr());
+                return 1;
+            } Compiler.compile(fn, ast.node);
+
+            return 0;
         }
     }
 }

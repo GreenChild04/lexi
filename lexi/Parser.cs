@@ -74,7 +74,7 @@ namespace lexi
 
         public ParseResult iterStmt(bool strict=false, string bracket=null) {
             ParseResult res = new ParseResult();
-            ArrayList elementNodes = new ArrayList();
+            List<dynamic> elementNodes = new List<dynamic>();
             Position posStart = this.currentTok.posStart.copy();
 
             elementNodes.Add(res.register(this.stmt()));
@@ -186,8 +186,8 @@ namespace lexi
         public ParseResult ifExpr() {
             ParseResult res = new ParseResult();
             Position posStart = this.currentTok.posStart;
-            ArrayList conditions = new ArrayList();
-            List<CurlNode> bodies = new List<CurlNode>();
+            List<dynamic> conditions = new List<dynamic>();
+            List<dynamic> bodies = new List<dynamic>();
 
             if (!this.currentTok.matches(Token.KEYWORD, "if")) {
                 return res.failure(new Error(
@@ -290,7 +290,7 @@ namespace lexi
                 res.registerAdvance(this.advance());
             } else identifier = null;
 
-            List<Token> args = new List<Token>();
+            List<dynamic> args = new List<dynamic>();
             if (this.currentTok.type == Token.LPAREN) {
                 res.registerAdvance(this.advance());
 
@@ -350,7 +350,7 @@ namespace lexi
 
         public ParseResult iterExpr(bool strict=false, string bracket=null) {
             ParseResult res = new ParseResult();
-            ArrayList elementNodes = new ArrayList();
+            List<dynamic> elementNodes = new List<dynamic>();
             Position posStart = this.currentTok.posStart.copy();
 
             elementNodes.Add(res.register(this.expr()));
@@ -426,7 +426,7 @@ namespace lexi
                 if (res.error is not null) return res;
 
                 return res.success(new IterNode(
-                    new ArrayList() {
+                    new List<dynamic>() {
                         new VarDefNode(identifier, null, isConst, posStart, this.currentTok.posEnd),
                         varMod
                     },
@@ -467,12 +467,12 @@ namespace lexi
 
             if (this.currentTok.type == Token.NSET) {
                 res.registerAdvance(this.advance());
-                return res.success(new CallNode(compExpr, identifier, new ArrayList(), posStart, this.currentTok.posEnd));
+                return res.success(new CallNode(compExpr, identifier, new List<dynamic>(), posStart, this.currentTok.posEnd));
             }
 
             if (this.currentTok.type == Token.SET) {
                 res.registerAdvance(this.advance());
-                ArrayList argNodes = new ArrayList();
+                List<dynamic> argNodes = new List<dynamic>();
 
                 IterNode iterNode = (IterNode) res.register(this.iterExpr(true));
                 if (res.error is not null) return res;
@@ -619,7 +619,7 @@ namespace lexi
 
         public ParseResult tupleExpr() {
             ParseResult res = new ParseResult();
-            ArrayList elementNodes = new ArrayList();
+            List<dynamic> elementNodes = new List<dynamic>();
             Position posStart = this.currentTok.posStart.copy();
 
             if (this.currentTok.type != Token.LPAREN) {
@@ -658,7 +658,7 @@ namespace lexi
 
         public ParseResult listExpr() {
             ParseResult res = new ParseResult();
-            ArrayList elementNodes = new ArrayList();
+            List<dynamic> elementNodes = new List<dynamic>();
             Position posStart = this.currentTok.posStart.copy();
 
             if (this.currentTok.type != Token.LSQUARE) {
@@ -694,7 +694,7 @@ namespace lexi
 
         public ParseResult curlExpr() {
             ParseResult res = new ParseResult();
-            ArrayList elementNodes = new ArrayList();
+            List<dynamic> elementNodes = new List<dynamic>();
             Position posStart = this.currentTok.posStart.copy();
 
             if (this.currentTok.type != Token.LCURL) {

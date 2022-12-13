@@ -81,5 +81,87 @@ namespace lexi
 
             return res.success(new late.primative._iteration.Tuple(elements).setContext(context).setPos(node.posStart, node.posEnd));
         }
+
+        public static RTResult visit_ListNode(ListNode node, Context context) {
+            RTResult res = new RTResult();
+            List<dynamic> elements = new List<dynamic>();
+
+            for (int i = 0; i < node.elementNodes.Count; i++) {
+                elements.Add(res.register(Interpreter.visit(node.elementNodes[i], context)));
+                if (res.error is not null) return res;
+            }
+
+            return res.success(new late.primative._iteration.List(elements).setContext(context).setPos(node.posStart, node.posEnd));
+        }
+
+        public static RTResult visit_CurlNode(CurlNode node, Context context) {
+            RTResult res = new RTResult();
+            List<dynamic> elements = new List<dynamic>();
+
+            for (int i = 0; i < node.elementNodes.Count; i++) {
+                elements.Add(node.elementNodes[i]);
+            }
+
+            return res.success(new late.primative._iteration.Curl(elements).setContext(context).setPos(node.posStart, node.posEnd));
+        }
+
+        public static RTResult visit_IterNode(IterNode node, Context context) {return Interpreter.visit_TupleNode(node.to<TupleNode>(), context);}
+
+        public static RTResult visit_ListConvNode(ListConvNode node, Context context) {
+            RTResult res = new RTResult();
+            List<dynamic> args = new List<dynamic>();
+
+            dynamic nodeToConv = res.register(Interpreter.visit(node.nodeToConv, context));
+            if (res.error is not null) return res;
+            nodeToConv = nodeToConv.copy().setPos(node.posStart, node.posEnd);
+
+            for (int i = 0; i < node.argNodes.Count; i++) {
+                args.Add(res.register(Interpreter.visit(node.argNodes[i], context)));
+                if (res.error is not null) return res;
+            }
+
+            object returnValue = res.register(nodeToConv.Conv_list(args));
+            if (res.error is not null) return res;
+
+            return res.success(returnValue);
+        }
+
+        public static RTResult visit_CurlConvNode(CurlConvNode node, Context context) {
+            RTResult res = new RTResult();
+            List<dynamic> args = new List<dynamic>();
+
+            dynamic nodeToConv = res.register(Interpreter.visit(node.nodeToConv, context));
+            if (res.error is not null) return res;
+            nodeToConv = nodeToConv.copy().setPos(node.posStart, node.posEnd);
+
+            for (int i = 0; i < node.argNodes.Count; i++) {
+                args.Add(res.register(Interpreter.visit(node.argNodes[i], context)));
+                if (res.error is not null) return res;
+            }
+
+            object returnValue = res.register(nodeToConv.Conv_curl(args));
+            if (res.error is not null) return res;
+
+            return res.success(returnValue);
+        }
+
+        public static RTResult visit_TupleConvNode(TupleConvNode node, Context context) {
+            RTResult res = new RTResult();
+            List<dynamic> args = new List<dynamic>();
+
+            dynamic nodeToConv = res.register(Interpreter.visit(node.nodeToConv, context));
+            if (res.error is not null) return res;
+            nodeToConv = nodeToConv.copy().setPos(node.posStart, node.posEnd);
+
+            for (int i = 0; i < node.argNodes.Count; i++) {
+                args.Add(res.register(Interpreter.visit(node.argNodes[i], context)));
+                if (res.error is not null) return res;
+            }
+
+            object returnValue = res.register(nodeToConv.Conv_tuple(args));
+            if (res.error is not null) return res;
+
+            return res.success(returnValue);
+        }
     }
 }
