@@ -5,16 +5,18 @@ namespace lexi
 {
     class Lexi {
         public static void Main(string[] args) {
-            try {
-                compile(args[0], File.ReadAllText(args[0]));
-            } catch (Exception) {
-                while (true) {
-                    System.Console.Write("<lexi#>");
-                    string input = System.Console.ReadLine();
-                    System.Console.WriteLine();
-                    run("<stdin>", input);
-                }
-            }
+            dynamic ast = Compiler.parse("program.slo");
+            System.Console.WriteLine(ast.repr());
+            // try {
+            //     compile(args[0], File.ReadAllText(args[0]));
+            // } catch (Exception) {
+            //     while (true) {
+            //         System.Console.Write("<lexi#>");
+            //         string input = System.Console.ReadLine();
+            //         System.Console.WriteLine();
+            //         run("<stdin>", input);
+            //     }
+            // }
         }
 
         public static int run(string fn, string text) {

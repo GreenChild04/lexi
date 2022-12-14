@@ -9,7 +9,6 @@ namespace SeraLib
         public static char com = '⁣';
         public static char raw = '⁠';
         public static char eof = '⁡';
-        public static char none = ' ';
 
         public static string toString(char special) {
             Dictionary<char, string> dic = new Dictionary<char, string>() {
@@ -19,7 +18,6 @@ namespace SeraLib
                 {Symbols.com, ", "},
                 {Symbols.raw, "#"},
                 {Symbols.eof, "/"},
-                {Symbols.none, "<null>"},
             }; return dic[special];
         }
 
@@ -63,14 +61,12 @@ namespace SeraLib
 
         dynamic expr() {
             if (this.currentChar == Symbols.raw) return this.getRaw();
-            if (this.currentChar == Symbols.none) {
-                this.advance();
-                return null;
-            }
             uint address = this.address();
             List<dynamic> data = this.list();
 
             if (address == SeraGenerics.List.address) return data;
+            if (address == SeraGenerics.Null.address) return null;
+            if (address == SeraGenerics.Number.address) return double.Parse(data[0]);
 
             return Activator.CreateInstance(this.dest[address], new object[] {new SeraData(data)});
         }
@@ -134,10 +130,6 @@ namespace SeraLib
         }
 
         public string compile() {
-            return this.expr();
-        }
-
-        string expr() {
             string result = "";
             result += this.getAddress();
             result += this.list();
@@ -151,8 +143,7 @@ namespace SeraLib
 
         string list() {
             string result = $"{Symbols.open}";
-            try {result += this.getNested(0);}
-            catch {}
+            if (this.Count > 0) result += this.getNested(0);
 
             for (int i = 1; i < this.Count; i++) {
                 result += $"{Symbols.com}{this.getNested(i)}";
@@ -164,9 +155,9 @@ namespace SeraLib
         string getNested(int index) {
             if (this[index] is string) return $"{Symbols.raw}{this[index]}";
             if (this[index] is List<dynamic>) return new SeraGenerics.List(this[index]).seralib().compile();
-            // if (this[index] is not SeraData) throw new Exception("[SeraLib Error] Cannot compile unknown object");
-            if (this[index] is null) return Symbols.none.ToString();
-            if (this[index] is not SeraData) return this[index].seralib().compile();
+            if (this[index] is null) return new SeraGenerics.Null().seralib().compile();
+            if (this[index] is double) return new SeraGenerics.Number(this[index]).seralib().compile();
+            if (this[index] is not SeraData) try {return this[index].seralib().compile();} catch {throw new Exception("[SeraLib Error] Cannot compile unknown object");}
             return this[index].data.seralib().compile();
         }
     }
@@ -179,7 +170,7 @@ namespace SeraLib
         public class List {
             public List<dynamic> list;
 
-            public static uint address = 2341;
+            public static uint address = 1;
 
             public List(List<dynamic> list) {
                 this.list = list;
@@ -190,6 +181,31 @@ namespace SeraLib
                 for (int i = 0; i < this.list.Count; i++)
                     result.Add(this.list[i]);
                 return result;
+            }
+        }
+
+        public class Null {
+            public string data = "<null>";
+            public static uint address = 2;
+
+            public Null() {}
+            public Null(SeraData data) {}
+
+            public SeraBall seralib() {
+                return new SeraBall(Null.address) {this.data};
+            }
+        }
+
+        public class Number {
+            public double number;
+            public static uint address = 3;
+
+            public Number(double number) {
+                this.number = number;
+            }
+
+            public SeraBall seralib() {
+                return new SeraBall(Number.address) {this.number.ToString()};
             }
         }
     }

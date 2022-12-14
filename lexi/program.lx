@@ -1,0 +1,13 @@
+late Person(name, age): {
+    col init: {
+        this.name = name;
+	this.age = age;
+    };
+
+    late greet(): {
+        print: "Hello my name is " + this.name + " and I am " + this.age + "years old";
+    };
+};
+
+Person Ethan: "Ethan", 12;
+Ethan.greet();

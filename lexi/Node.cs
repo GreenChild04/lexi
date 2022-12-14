@@ -250,9 +250,9 @@ namespace lexi
         }
     }
 
-    public class ListConvNode: ConvNode {public ListConvNode(object nodeToConv, List<dynamic> argNodes, Position posStart, Position posEnd): base(nodeToConv, argNodes, posStart, posEnd) {} public new static uint address = 1012; public new SeraLib.SeraBall seralib() {return new SeraLib.SeraBall(address) {this.posStart,this.posEnd,this.nodeToConv,this.argNodes,};}}
-    public class TupleConvNode: ConvNode {public TupleConvNode(object nodeToConv, List<dynamic> argNodes, Position posStart, Position posEnd): base(nodeToConv, argNodes, posStart, posEnd) {} public new static uint address = 1013; public new SeraLib.SeraBall seralib() {return new SeraLib.SeraBall(address) {this.posStart,this.posEnd,this.nodeToConv,this.argNodes,};}}
-    public class CurlConvNode: ConvNode {public CurlConvNode(object nodeToConv, List<dynamic> argNodes, Position posStart, Position posEnd): base(nodeToConv, argNodes, posStart, posEnd) {} public new static uint address = 1014; public new SeraLib.SeraBall seralib() {return new SeraLib.SeraBall(address) {this.posStart,this.posEnd,this.nodeToConv,this.argNodes,};}}
+    public class ListConvNode: ConvNode {public ListConvNode(object nodeToConv, List<dynamic> argNodes, Position posStart, Position posEnd): base(nodeToConv, argNodes, posStart, posEnd) {} public new static uint address = 1012; public new SeraLib.SeraBall seralib() {return new SeraLib.SeraBall(address) {this.posStart,this.posEnd,this.nodeToConv,this.argNodes,};} public ListConvNode(SeraLib.SeraData data): base(data) {}}
+    public class TupleConvNode: ConvNode {public TupleConvNode(object nodeToConv, List<dynamic> argNodes, Position posStart, Position posEnd): base(nodeToConv, argNodes, posStart, posEnd) {} public new static uint address = 1013; public new SeraLib.SeraBall seralib() {return new SeraLib.SeraBall(address) {this.posStart,this.posEnd,this.nodeToConv,this.argNodes,};} public TupleConvNode(SeraLib.SeraData data): base(data) {}}
+    public class CurlConvNode: ConvNode {public CurlConvNode(object nodeToConv, List<dynamic> argNodes, Position posStart, Position posEnd): base(nodeToConv, argNodes, posStart, posEnd) {} public new static uint address = 1014; public new SeraLib.SeraBall seralib() {return new SeraLib.SeraBall(address) {this.posStart,this.posEnd,this.nodeToConv,this.argNodes,};} public CurlConvNode(SeraLib.SeraData data): base(data) {}}
 
     public class GetNode: Node{
         public dynamic mainNode;
@@ -306,7 +306,7 @@ namespace lexi
         }
 
         public new string repr() {
-            return (identifier is not null) ? $"CallNode({this.nodeToCall.repr()} -> {this.identifier.repr()})": $"CallNode({this.nodeToCall.repr()})";
+            return identifier is not null ? $"CallNode({this.nodeToCall.repr()} -> {this.identifier.repr()})": $"CallNode({this.nodeToCall.repr()})";
         }
 
         /////////////////////
@@ -318,14 +318,16 @@ namespace lexi
         public CallNode(SeraLib.SeraData data) {
             this.posStart = data.data[0];
             this.posEnd = data.data[1];
-            this.identifier = data.data[2];
-            this.args = data.data[3];
+            this.nodeToCall = data.data[2];
+            this.identifier = data.data[3];
+            this.args = data.data[4];
         }
 
         public SeraLib.SeraBall seralib() {
             return new SeraLib.SeraBall(CallNode.address) {
                 this.posStart,
                 this.posEnd,
+                this.nodeToCall,
                 this.identifier,
                 this.args,
             };
